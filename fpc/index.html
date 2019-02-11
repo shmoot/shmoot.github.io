@@ -1,0 +1,828 @@
+<html>
+<head>
+<meta charset = "UTF-8">
+
+<title>Shmoot's Fallout Password Cracker</title>
+
+<style>
+body {font-family: Courier, Monospace; font-size: small}
+button {font-family: Courier, Monospace; font-size: small}
+select {font-family: Courier, Monospace; font-size: small}
+table {font-family: Courier, Monospace; font-size: small}
+td {text-align: right; vertical-align: top}
+span.hey {background-color: #e0e0e0; font-weight: bold}
+span.nope {color: #808080}
+input {font-family: Courier, Monospace; font-size: small}
+</style>
+
+<script>
+
+var master_list = [];
+var working_list = [];
+
+
+function master_list_update()
+{
+  // the master list has changed, so this function needs to show all the
+  // effects of the change in the page
+
+  // quite simply, it will discard all effects present and rebuild them
+
+  var nope_ref;
+  var yep_ref;
+  var proceed_ref;
+  var stats_ref;
+
+  var loop;
+  var string_thing;
+
+  nope_ref = document.getElementById("nope_span");
+  yep_ref = document.getElementById("candidates_step1_span");
+  proceed_ref = document.getElementById("step_1_proceed_button");
+  stats_ref = document.getElementById("cand_list_stats");
+
+  if((nope_ref === null) || (yep_ref === null) || (proceed_ref === null) || (stats_ref === null))
+  {
+    alert("hawnk");
+    return;
+  }
+
+  if(master_list.length === 0)
+  {
+    nope_ref.removeAttribute("hidden");
+    yep_ref.setAttribute("hidden", "");
+    proceed_ref.setAttribute("disabled", "");
+    stats_ref.innerHTML = "(CNT. 0; LEN. N/A)";
+    return;
+  }
+
+  if(typeof(master_list[0]) !== typeof(""))
+  {
+    alert("flawwk");
+    return;
+  }
+
+  master_list.sort();
+
+  nope_ref.setAttribute("hidden", "");
+  yep_ref.removeAttribute("hidden");
+  proceed_ref.removeAttribute("disabled");
+  string_thing = "(CNT. ";
+  string_thing += master_list.length;
+  string_thing += "; LEN. ";
+  string_thing += master_list[0].length;
+  string_thing += ")";
+  stats_ref.innerHTML = string_thing;
+
+  string_thing = "";
+
+  for(loop = 0; loop < master_list.length; ++loop)
+  {
+    string_thing += master_list[loop];
+    string_thing += " <button onclick = \"remove_cand(";
+    string_thing += loop;
+    string_thing += ")\">REMOVE</button><br>";
+  }
+
+  yep_ref.innerHTML = string_thing;
+}
+
+
+function add_func()
+{
+  var input_ref;
+  var error_ref;
+
+  var cand_string;
+  var loop;
+
+  var error_string = "*** ERROR: PASSWORD CANDIDATE MUST BE AN ALPHABETIC STRING<br><br>";
+  var error_alpha = "*** ERROR: PASSWORD CANDIDATE MUST CONTAIN ONLY ALPHABETIC CHARACTERS<br><br>";
+  var error_len = "*** ERROR: PASSWORD CANDIDATE MUST BE SAME LENGTH AS PREVIOUSLY ENTERED CANDIDATES<br><br>";
+  var error_zero_len = "*** ERROR: NO PASSWORD CANDIDATE PRESENT<br><br>";
+  var error_already = "*** ERROR: CANDIDATE ALREADY ADDED<br><br>";
+
+  input_ref = document.getElementById("cand_input");
+  error_ref = document.getElementById("step_1_error")
+  if((input_ref === null) || (error_ref === null))
+  {
+    alert("blorf");
+    return;
+  }
+
+  // give the input focus again to save a click
+  input_ref.focus();
+
+  // verify the candidate string
+
+  cand_string = input_ref.value;
+  if(typeof(cand_string) !== typeof(""))
+  {
+    error_ref.innerHTML = error_string;
+    error_ref.removeAttribute("hidden");
+    return;
+  }
+
+  if(master_list.length == 0)
+  {
+    if(cand_string.length == 0)
+    {
+      error_ref.innerHTML = error_zero_len;
+      error_ref.removeAttribute("hidden");
+      return;
+    }
+  }
+  else
+  {
+    if(typeof(master_list[0]) !== typeof(""))
+    {
+      alert("heckblorgf");
+      return;
+    }
+    if(cand_string.length !== master_list[0].length)
+    {
+      if(cand_string.length === 0) error_ref.innerHTML = error_zero_len;
+      else error_ref.innerHTML = error_len;
+      error_ref.removeAttribute("hidden");
+      return;
+    }
+  }
+
+  // Now to verify that the string is alphabetic characters.  A regular
+  // expression could probably do that, but those are scary.  So I'll create
+  // a string of every alphabetic character (both cases) and then use
+  // includes() to see if each character in the candidate, one-by-one, is in
+  // that mish-mash string.
+
+  var mishmash = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  for(loop = 0; loop < cand_string.length; ++loop)
+  {
+    if(!(mishmash.includes(cand_string.charAt(loop))))
+    {
+      error_ref.innerHTML = error_alpha;
+      error_ref.removeAttribute("hidden");
+      return;
+    }
+  }
+
+  // before adding, make sure it's not already there
+
+  cand_string = cand_string.toUpperCase();
+
+  if(master_list.indexOf(cand_string) >= 0)
+  {
+    error_ref.innerHTML = error_already;
+    error_ref.removeAttribute("hidden");
+    return;
+  }
+
+  // okay, now that it's been vetted, add it
+  master_list.push(cand_string);
+
+  // and clear the input, for convenience
+  input_ref.value = "";
+
+  // valid add, so hide the error element
+  error_ref.setAttribute("hidden", "");
+
+  // pass some buck
+  master_list_update();
+}
+
+
+function key_watcher(happen)
+{
+  // that had better be a keyboard event...
+  if(happen.key === "Enter")
+  {
+    add_func();
+  }
+}
+
+
+function clear_all()
+{
+  master_list.length = 0;
+  master_list_update();
+}
+
+
+function remove_cand(which)
+{
+  if(typeof(which) !== typeof(0))
+  {
+    alert("fwaxf");
+    return;
+  }
+
+  if((which < 0) || (which >= master_list.length))
+  {
+    alert("sgrumpf");
+    return;
+  }
+
+  master_list.splice(which, 1);
+  master_list_update();
+}
+
+
+function step_1_proceed()
+{
+  var step_1_ref;
+  var step_2_ref;
+
+  var loop;
+
+  step_1_ref = document.getElementById("step_1");
+  step_2_ref = document.getElementById("step_2");
+  if((step_1_ref === null) || (step_2_ref === null))
+  {
+    alert("bliff");
+    return;
+  }
+
+  step_1_ref.setAttribute("hidden", "");
+  step_2_ref.removeAttribute("hidden");
+
+  // gotta copy manually; otherwise it's just a reference
+  working_list.length = 0;
+  for(loop = 0; loop < master_list.length; ++loop)
+  {
+    working_list.push(master_list[loop]);
+  }
+
+  step_2_update();
+}
+
+
+// better write that one, then
+function step_2_update()
+{
+  var select_ref;
+  var new_opt;
+  var rec_ref;
+
+  var step_2_ref;
+  var step_3_ref;
+  var winner_ref;
+  var step_error_ref;
+
+  var loop;
+
+  select_ref = document.getElementById("cands_select");
+  rec_ref = document.getElementById("recommended");
+  step_2_ref = document.getElementById("step_2");
+  step_3_ref = document.getElementById("step_3");
+  winner_ref = document.getElementById("winner");
+  step_error_ref = document.getElementById("step_error");
+
+  if((select_ref === null) || (rec_ref === null) || (step_2_ref === null) ||
+    (step_3_ref === null) || (winner_ref === null) || (step_error_ref === null))
+  {
+    alert("hormq");
+    return;
+  }
+
+  // clear out anything present in the select
+  while(select_ref.length > 0)
+  {
+    select_ref.remove(0);
+  }
+
+  select_ref.size = master_list.length;
+
+  if(working_list.length === 1)
+  {
+    winner_ref.innerHTML = working_list[0];
+    step_2_ref.setAttribute("hidden", "");
+    step_3_ref.removeAttribute("hidden");
+    return;
+  }
+
+  if(working_list.length < 1)
+  {
+    step_2_ref.setAttribute("hidden", "");
+    step_error_ref.removeAttribute("hidden");
+  }
+
+  for(loop = 0; loop < working_list.length; ++loop)
+  {
+    new_opt = document.createElement("option");
+    new_opt.text = working_list[loop];
+    select_ref.add(new_opt);
+  }
+
+  select_ref.selectedIndex = -1;
+
+  // and update part of this thing based on that
+  step_2_selection_change();
+
+  // now the big paperwork of choosing a recommendation
+  var index_is_num_matches = [];
+  var current_upbound;
+  var current_spread;
+  var champ_upbound;
+  var spread_at_champ;
+  var champ_cands = [];
+
+  var inner_loop;
+  var match_loop;
+  var matches;
+
+  // could have [0, cand. length - 1] matches; if it has cand. length matches,
+  // it's the same word
+  index_is_num_matches.length = working_list[0].length;
+
+  // initialize that array to more arrays
+  for(loop = 0; loop < index_is_num_matches.length; ++loop)
+  {
+    index_is_num_matches[loop] = [];
+  }
+
+  champ_cands.length = 0;
+  champ_upbound = master_list.length + 1;  // initialize too big so it'll catch
+    // the first one
+  spread_at_champ = 0;
+
+  // loop will pick a candidate; inner_loop will pick one to compare with loop's
+  for(loop = 0; loop < working_list.length; ++loop)
+  {
+    // first, reset the index_is_num_matches array for this loop word
+    for(inner_loop = 0; inner_loop < index_is_num_matches.length; ++inner_loop)
+    {
+      index_is_num_matches[inner_loop].length = 0;
+    }
+
+    // now pick another word to compare with loop's word
+    for(inner_loop = 0; inner_loop < working_list.length; ++inner_loop)
+    {
+      // don't compare word with self
+      if(loop === inner_loop) continue;
+
+      if(working_list[loop].length !== working_list[inner_loop].length)
+      {
+        alert("ARGHBLARG");
+        return;
+      }
+
+      matches = 0;
+      for(match_loop = 0; match_loop < working_list[loop].length; ++match_loop)
+      {
+        if(working_list[loop].charAt(match_loop) === working_list[inner_loop].charAt(match_loop))
+        {
+          ++matches;
+        }
+      }
+
+      // now that we have the match count, put this one in the proper slot in
+      // the index_is_num_matches array
+      if(matches >= index_is_num_matches.length)
+      {
+        alert("HONKBLONK");
+        return;
+      }
+      index_is_num_matches[matches].push(working_list[inner_loop]);
+    }
+
+    // so now we have a map of what matches loop's word has with all the other
+    // words... compare this map's statistics with other words' maps' statistics
+
+    // hmm, we need a loop, and "loop" is being used... hey look, inner_loop
+    // isn't doing anything
+    current_upbound = 0;
+    current_spread = 0;
+    for(inner_loop = 0; inner_loop < index_is_num_matches.length; ++inner_loop)
+    {
+      if(index_is_num_matches[inner_loop].length > current_upbound)
+      {
+        current_upbound = index_is_num_matches[inner_loop].length;
+      }
+      if(index_is_num_matches[inner_loop].length > 0)
+      {
+        ++current_spread;
+      }
+    }
+    if(current_upbound === 0)
+    {
+      alert("That did not go as expected.");
+      return;
+    }
+
+    // so now we have an upper bound and a spread for loop's word; compare those
+    // stats to stats from other words
+
+    // find the smallest upper bound, and if tied, find the widest spread;
+    // if both tied, then both words go in
+    if(current_upbound < champ_upbound)
+    {
+      champ_cands.length = 0;
+      champ_cands.push(working_list[loop]);
+      champ_upbound = current_upbound;
+      spread_at_champ = current_spread;
+    }
+    else if(current_upbound === champ_upbound)
+    {
+      if(current_spread >= spread_at_champ)
+      {
+        // it's at least a tie... is it a better one?
+        if(current_spread > spread_at_champ)
+        {
+          // yes -- clear out old stuff
+          champ_cands.length = 0;
+          spread_at_champ = current_spread;
+        }
+        // and push either way
+        champ_cands.push(working_list[loop]);
+      }
+    }
+  }
+
+  // and with that, we have a recommendation
+
+  // ... or at least we should
+  if(champ_cands.length <= 0)
+  {
+    alert("sebbv");
+    return;
+  }
+
+  var rec_ref;
+
+  rec_ref = document.getElementById("recommended");
+  if(rec_ref === null)
+  {
+    alert("hobly");
+    return;
+  }
+
+  var string_thing;
+
+  string_thing = "RECOMMENDED: ";
+  for(loop = 0; loop < champ_cands.length; ++loop)
+  {
+    if(loop > 0) string_thing += ", ";
+    string_thing += champ_cands[loop];
+  }
+  string_thing += " (PATH LENGTH UPPER BOUND: ";
+  string_thing += champ_upbound;
+  string_thing += "; PATH SPREAD: ";
+  string_thing += spread_at_champ;
+  string_thing += ")<br><br>";
+
+  rec_ref.innerHTML = string_thing;
+}
+
+
+function back_to_step_1()
+{
+  var step_1_ref;
+  var step_1_error_ref;  // distinct from below
+  var step_2_ref;
+  var step_3_ref;
+  var step_error_ref;
+  var s1i_ref;
+
+  step_1_ref = document.getElementById("step_1");
+  step_1_error_ref = document.getElementById("step_1_error");
+  step_2_ref = document.getElementById("step_2");
+  step_3_ref = document.getElementById("step_3");
+  step_error_ref = document.getElementById("step_error");
+  s1i_ref = document.getElementById("cand_input");
+
+  if((step_1_ref === null) || (step_2_ref === null) || (s1i_ref === null) ||
+    (step_3_ref === null) || (step_error_ref === null) ||
+    (step_1_error_ref === null))
+  {
+    alert("vorff");
+    return;
+  }
+
+  step_2_ref.setAttribute("hidden", "");
+  step_3_ref.setAttribute("hidden", "");
+  step_error_ref.setAttribute("hidden", "");
+  step_1_error_ref.setAttribute("hidden", "");
+  s1i_ref.value = "";
+  step_1_ref.removeAttribute("hidden");
+  s1i_ref.focus();
+}
+
+
+function step_2_selection_change()
+{
+  // lotsa fun paperwork in this one
+
+  var select_ref;
+  var results_ref;
+
+  var string_thing;
+  var html_thing;
+
+  var matches_by_index;  // another crazy double array
+  var loop;
+  var match_loop;
+  var match_count;
+  var letter_loop;
+  var lookitme;
+  var plub;  // elegantly named
+  var spread;
+
+  select_ref = document.getElementById("cands_select");
+  results_ref = document.getElementById("selected_cand");
+
+  if((select_ref === null) || (results_ref === null))
+  {
+    alert("gwelpf");
+    return;
+  }
+
+  if(select_ref.selectedIndex < 0)
+  {
+    results_ref.innerHTML = "SELECT A PASSWORD CANDIDATE FROM THE LIST ABOVE";
+    return;
+  }
+
+  if(typeof("") !== typeof(select_ref.value))
+  {
+    alert("orfblorf");
+    return;
+  }
+
+  if(working_list.indexOf(select_ref.value) < 0)
+  {
+    alert("orfblorfglorf");
+    return;
+  }
+
+  // initialize the crazy array
+  matches_by_index = [];
+  matches_by_index.length = select_ref.value.length;
+  for(loop = 0; loop < matches_by_index.length; ++loop)
+  {
+    matches_by_index[loop] = [];
+  }
+
+  // now start comparing this word with each of the others
+  for(loop = 0; loop < working_list.length; ++loop)
+  {
+    if(select_ref.value === working_list[loop]) continue;  // don't check self
+    if(select_ref.value.length !== working_list[loop].length)
+    {
+      alert("orfglorfheck");
+      return;
+    }
+
+    match_count = 0;
+    for(match_loop = 0; match_loop < select_ref.value.length; ++match_loop)
+    {
+      if(select_ref.value.charAt(match_loop) === working_list[loop].charAt(match_loop))
+      {
+        ++match_count;
+      }
+    }
+
+    if((match_count < 0) || (match_count >= matches_by_index.length))
+    {
+      alert("orfglorfheckwonger");
+      return;
+    }
+
+    matches_by_index[match_count].push(working_list[loop]);
+  }
+
+  // better count plub and spread
+  plub = 0;
+  spread = 0;
+  for(loop = 0; loop < matches_by_index.length; ++loop)
+  {
+    if(matches_by_index[loop].length > plub)
+    {
+      plub = matches_by_index[loop].length;
+    }
+    if(matches_by_index[loop].length > 0)
+    {
+      ++spread;
+    }
+  }
+  if((plub === 0) || (spread === 0))
+  {
+    alert("that is a strange result");
+    return;
+  }
+
+  // now the fun paperwork starts
+
+  html_thing = "<table><tbody>";
+  html_thing += "<tr><td>SELECTED CANDIDATE:&nbsp;</td>";
+  html_thing += "<td><span class = \"hey\">";
+  html_thing += select_ref.value;
+  html_thing += "</span></td><td>&nbsp;(PATH LENGTH UPPER BOUND: ";
+  html_thing += plub;
+  html_thing += "; PATH SPREAD: ";
+  html_thing += spread;
+  html_thing += ")";
+  html_thing += "</td></tr>";
+
+  for(loop = 0; loop < matches_by_index.length; ++loop)
+  {
+    if(matches_by_index[loop].length === 0) continue;  // no need empties
+    html_thing += "<tr><td><button onclick = \"match_button_func(";
+    html_thing += select_ref.selectedIndex;
+    html_thing += ", ";
+    html_thing += loop;
+    html_thing += ")\">";
+    if(loop < 10) html_thing += "&nbsp;";
+    html_thing += loop;
+    html_thing += " MATCH(ES)";
+    html_thing += ":</button>&nbsp;</td><td>";
+    for(match_loop = 0; match_loop < matches_by_index[loop].length; ++match_loop)
+    {
+      if(match_loop > 0) html_thing += "<br>";
+      lookitme = false;
+      if(select_ref.value.length !== (matches_by_index[loop])[match_loop].length)
+      {
+        alert("well bagels");
+        return;
+      }
+      for(letter_loop = 0; letter_loop < select_ref.value.length; ++letter_loop)
+      {
+        if(select_ref.value.charAt(letter_loop) ===
+          (matches_by_index[loop])[match_loop].charAt(letter_loop))
+        {
+          // matching characters!  Is it already highlighted?
+          if(!lookitme)
+          {
+            html_thing += "<span class = \"hey\">";
+            lookitme = true;
+          }
+        }
+        else
+        {
+          // non-matching characters... is highlight still on?
+          if(lookitme)
+          {
+            html_thing += "</span>";
+            lookitme = false;
+          }
+        }
+        // almost as an afterthought, add that character
+        html_thing += (matches_by_index[loop])[match_loop].charAt(letter_loop);
+      }
+      // end of this word -- if still in highlight mode, close the span
+      if(lookitme)
+      {
+        html_thing += "</span>";
+        lookitme = false;
+      }
+    }
+
+    html_thing += "</td></tr>";
+  }
+
+  html_thing += "</tbody></table><br><br>";
+  html_thing += "IF THAT WAS NOT THE CORRECT PASSWORD, SELECT HOW MAN";
+  html_thing += "Y CHARACTERS MATCHED";
+  results_ref.innerHTML = html_thing;
+}
+
+
+function reset_clear()
+{
+  clear_all();
+  reset();
+}
+
+
+function reset()
+{
+  back_to_step_1();
+  // that may not actually have needed its own function, I guess
+}
+
+
+function match_button_func(which, how_many)
+{
+  // which: index into working_list
+  if((typeof(which) !== typeof(0)) || (typeof(how_many) !== typeof(0)))
+  {
+    alert("halrumg");
+    return;
+  }
+
+  if((which < 0) || (which >= working_list.length))
+  {
+    alert("boump");
+    return;
+  }
+
+  if((how_many < 0) || (how_many >= working_list[which].length))
+  {
+    alert("doump");
+    return;
+  }
+
+  var loop;
+  var letter_loop;
+  var switch_array = [];
+  var count;
+
+  for(loop = 0; loop < working_list.length; ++loop)
+  {
+    if(loop === which) continue;
+    if(working_list[loop].length !== working_list[which].length)
+    {
+      alert("after all this time... how?");
+      return;
+    }
+
+    count = 0;
+    for(letter_loop = 0; letter_loop < working_list[loop].length; ++letter_loop)
+    {
+      if(working_list[loop].charAt(letter_loop) === working_list[which].charAt(letter_loop))
+      {
+        ++count;
+      }
+    }
+    if(count === how_many)
+    {
+      switch_array.push(working_list[loop]);
+    }
+  }
+
+  // clear and replace working_list
+  working_list.length = 0;
+
+  for(loop = 0; loop < switch_array.length; ++loop)
+  {
+    working_list.push(switch_array[loop]);
+  }
+
+  step_2_update();
+}
+
+
+function start_focus()
+{
+  var ref;
+  ref = document.getElementById("cand_input");
+  if(ref === null)
+  {
+    alert("really?");
+    return;
+  }
+  ref.focus();
+}
+
+
+</script>
+
+</head>
+
+<body onload = "start_focus()">
+<div id = "redundant_title">
+SHMOOT'S FALLOUT&lt; 3|: NEW  VEGAS| 4| 76&gt; PASSWORD CRACKER
+<br><br>
+</div>
+
+<div id = "step_1">
+ADD A PASSWORD CANDIDATE:<br>
+<input type = "text" size = "15" id = "cand_input" onkeydown = "key_watcher(event)"> <button onclick = "add_func()">ADD</button>
+<br>
+<br>
+<span id = "step_1_error" hidden>
+</span>
+OR PROCEED TO THE CRACKING PHASE: <button id = "step_1_proceed_button" onclick = "step_1_proceed()" disabled>PROCEED</button>
+<br>
+<br>
+CURRENT PASSWORD CANDIDATES: <span id = "cand_list_stats">(CNT. 0; LEN. N/A)</span> <button onclick = "clear_all()">CLEAR ALL</button>
+<br>
+<span class = "nope" id = "nope_span">[ EMPTY ]</span>
+<span id = "candidates_step1_span" hidden></span>
+<br>
+</div>
+
+<div id = "step_2" hidden>
+<button onclick = "back_to_step_1()">RETURN TO CANDIDATE ENTRY PHASE</button>
+<br><br>
+SELECT A PASSWORD CANDIDATE TO TEST
+<br><br>
+<span id = "recommended"></span>
+<select id = "cands_select" onchange = "step_2_selection_change()"></select>
+<br><br>
+<span id = "selected_cand"></span>
+</div>
+
+<div id = "step_3" hidden>
+FINAL PASSWORD CANDIDATE: <span id = "winner" style = "font-weight:bold">yay</span>
+<br><br>
+<button onclick = "reset()">RESET AND KEEP CANDIDATES</button><br>
+<button onclick = "reset_clear()">RESET AND CLEAR CANDIDATES</button><br>
+</div>
+
+<div id = "step_error" hidden>
+ERROR: NO REMAINING PASSWORD CANDIDATES
+<br><br>
+<button onclick = "reset()">RESET AND KEEP CANDIDATES</button><br>
+<button onclick = "reset_clear()">RESET AND CLEAR CANDIDATES</button><br>
+</div>
+</body>
+</html>
