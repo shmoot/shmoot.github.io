@@ -3760,7 +3760,7 @@ difference
   }
   prism
   {
-    linear_spline linear_sweep 10, -10, 3, <0, 0.35>, <0.35, 0>, <0, -0.35>
+    linear_spline linear_sweep 10, -10, 4, <0, 0.35>, <0.35, 0>, <0, -0.35>, <0, 0.35>
     rotate 90 * x
     translate <0, -0.6, 0>
   }
@@ -10817,7 +10817,7 @@ difference
   union
   {
     box {<-0.85, -0.09, -10>, <0.051, 0.09, 10>}
-    prism {linear_spline linear_sweep 10, -10, 3, <0.05, 0.2>, <0.65, 0>, <0.05, -0.2> rotate 90 * x}
+    prism {linear_spline linear_sweep 10, -10, 4, <0.05, 0.2>, <0.65, 0>, <0.05, -0.2>, <0.05, 0.2> rotate 90 * x}
     translate 0.375 * x
     rotate 30 * z
     translate -0.375 * x
@@ -10825,7 +10825,7 @@ difference
   union
   {
     box {<-0.85, -0.09, -10>, <0.051, 0.09, 10>}
-    prism {linear_spline linear_sweep 10, -10, 3, <0.05, 0.2>, <0.65, 0>, <0.05, -0.2> rotate 90 * x}
+    prism {linear_spline linear_sweep 10, -10, 4, <0.05, 0.2>, <0.65, 0>, <0.05, -0.2>, <0.05, 0.2> rotate 90 * x}
     translate 0.375 * x
     rotate -30 * z
     translate -0.375 * x

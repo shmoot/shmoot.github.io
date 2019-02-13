@@ -4158,6 +4158,9 @@ function grid_click_handler(who)
 
   thing = who.innerHTML;
   ref.value = thing;
+
+  // this apparently doesn't trigger input or change events, so...
+  number_prettifier();
 }
 
 
@@ -4848,7 +4851,11 @@ function holy_crap_here_we_go()
   while(true)  // main reaction loop; will break to exit
   {
     // so let's see if we should break
-    if(current_cycle > hard_cycle_limit) break;
+    if(current_cycle > hard_cycle_limit)
+    {
+      console_write("Warning: cycle limit reached.  Make sure your waldo programs are set correctly.");
+      break;
+    }
     if(limit_type === PSI_LIMIT)
     {
       if(psi_count >= limit_count)
@@ -7087,7 +7094,7 @@ function holy_crap_here_we_go()
 
   if(!ultrabreak)
   {
-    console_write("Reaction simulation finished");
+    console_write("Reaction simulation finished.");
   }
 
   // and then write the ini text
@@ -7351,7 +7358,92 @@ function load_function()
     console_write("Page loaded successfully.");
   }
 
+  molecule_draw_clear_function();
   verify_molecule();
+
+  number_prettifier();
+}
+
+
+// let's try to make it more clear which cell is selected
+function number_prettifier()
+{
+  var input_ref;
+  var cell_ref;
+  var loop;
+  var string_thing;
+
+  input_ref = document.getElementById("input_grid_number");
+  if(input_ref == null)
+  {
+    console_write("Error: beautification resisted.");
+    return;
+  }
+
+  if(isNaN(input_ref.value))
+  {
+    input_ref.value = 1;
+    number_prettifier();
+    return;
+  }
+
+  if(input_ref.value < 1)
+  {
+    input_ref.value = 1;
+    number_prettifier();
+    return;
+  }
+
+  if(input_ref.value > 80)
+  {
+    input_ref.value = 80;
+    number_prettifier();
+    return;
+  }
+
+  if(Math.round(input_ref.value) != input_ref.value)
+  {
+    input_ref.value = Math.round(input_ref.value);
+    number_prettifier();
+    return;
+  }
+
+  for(loop = 1; loop <= 80; ++loop)
+  {
+    string_thing = "g";
+    string_thing += loop;
+    string_thing += "num";
+
+    cell_ref = document.getElementById(string_thing);
+    if(cell_ref == null)
+    {
+      string_thing = "Error: prettiness resisted at cell ";
+      string_thing += loop;
+      string_thing += ".";
+      console_write(string_thing);
+      return;
+    }
+
+    cell_ref.style.color = "inherit";
+    cell_ref.style.backgroundColor = "inherit";
+  }
+
+  string_thing = "g";
+  string_thing += input_ref.value;
+  string_thing += "num";
+
+  cell_ref = document.getElementById(string_thing);
+  if(cell_ref == null)
+  {
+    string_thing = "Error: prettiness resisted at current cell: ";
+    string_thing += input_ref.value;
+    string_thing += ".";
+    console_write(string_thing);
+    return;
+  }
+
+  cell_ref.style.color = "#FFFFFF";
+  cell_ref.style.backgroundColor = "#000000";
 }
 
 </script>
@@ -7389,11 +7481,13 @@ To start, you will need the following:
 
 How to use this thing:
 <ol>
-  <li>In section 1, replicate your solution's waldo programs and the placement of your reactor devices such as bonders, sensors, etc., on the reactor grid.  This is, admitedly, the worst of this interface, but perhaps it's best to get that over with quickly.</li>
+  <li>In section 1, replicate your solution's waldo programs and the placement of your reactor devices such as bonders, sensors, etc., on the reactor grid.  This is, admittedly, the worst of this interface, but perhaps it's best to get that over with quickly.</li>
   <li>In section 2, create molecules and assign them to input sequences and output labels.  (Technically, a single atom in a single molecule in a single input sequence is all that is needed to successfully create the bare minimum animated scene.)</li>
   <li>In section 3, generate and render a preview to make sure you've set everything as you expect, or set simulation and animation parameters and generate the full animated scene for your solution.</li>
 </ol>
 And in all cases, if you press a button and nothing or something other than what you expect happens, scroll way back up to the output log for some possibly useful information.
+<br><br>
+To reset absolutely everything, reload this page.  On Firefox, you may need to do a hard refresh (Ctrl-F5).
 </div>
 
 <hr>
@@ -8105,37 +8199,39 @@ Add or change something on the grid:<br>
   <tr>
     <td style = "vertical-align:top">
       Grid position:<br>
-      <input type = "number" id = "input_grid_number" min = "1" max = "80" step = "1" value = "1">
+      <input type = "number" id = "input_grid_number" min = "1" max = "80" step = "1" value = "1" onchange = "number_prettifier()">
     </td>
     <td style = "vertical-align:top">
       Object type:<br>
       <select id = "grid_object_select">
         <optgroup label = "Reactor Devices">
-        <option>Bonder</option>
-        <option>Atom Sensor</option>
-        <option>Fusion Target</option>
-        <option>Fission Target</option>
-        <option>Quantum Tunnel</option>
+          <option>Bonder</option>
+          <option>Atom Sensor</option>
+          <option>Fusion Target</option>
+          <option>Fission Target</option>
+          <option>Quantum Tunnel</option>
+        </optgroup>
         <optgroup label = "Reaction Controls">
-        <option>Start</option>
-        <option>Waldo Direction</option>
-        <option>Bond +</option>
-        <option>Bond -</option>
-        <option>Grab/Drop</option>
-        <option>Grab</option>
-        <option>Drop</option>
-        <option>In Alpha</option>
-        <option>In Beta</option>
-        <option>Out Psi</option>
-        <option>Out Omega</option>
-        <option>Sync</option>
-        <option>Rotate Clockwise</option>
-        <option>Rotate Counterclockwise</option>
-        <option>Sensor Redirect</option>
-        <option>Fuse</option>
-        <option>Split</option>
-        <option>Flip Flop</option>
-        <option>Swap (activate quantum tunnel)</option>
+          <option>Start</option>
+          <option>Waldo Direction</option>
+          <option>Bond +</option>
+          <option>Bond -</option>
+          <option>Grab/Drop</option>
+          <option>Grab</option>
+          <option>Drop</option>
+          <option>In Alpha</option>
+          <option>In Beta</option>
+          <option>Out Psi</option>
+          <option>Out Omega</option>
+          <option>Sync</option>
+          <option>Rotate Clockwise</option>
+          <option>Rotate Counterclockwise</option>
+          <option>Sensor Redirect</option>
+          <option>Fuse</option>
+          <option>Split</option>
+          <option>Flip Flop</option>
+          <option>Swap (activate quantum tunnel)</option>
+        </optgroup>
       </select>
     </td>
     <td style = "vertical-align:top">
@@ -8172,7 +8268,7 @@ Add or change something on the grid:<br>
 <br><br>
 Some notes:
 <ul>
-  <li>Fusion and fission targets take up two side-by-side grid spaces.  These controls refer to the left side of those devices.  As such, that left side cannot be placed in the rightmost column.</li>
+  <li>Fusion and fission targets take up two side-by-side grid spaces.  When placing a target, these controls refer to the left side of those devices.  As such, that left side cannot be placed in the rightmost column.</li>
   <li>There must be exactly 0 or 2 quantum tunnels in your solution.</li>
 </ul>
 </div>
@@ -8394,7 +8490,7 @@ Some more notes:<br>
 
 <hr>
 
-<p>
+<div>
 <b>Section 3:</b> And here's where you can get the results of all that.<br><br>
 
 Generate a preview scene to make sure all your reactor parts are in the right place (this will be a single, static image showing the reactor state before reactions begin):<br><br>
@@ -8427,8 +8523,10 @@ Run until... <select id = "how_long_to_run">
 (optional: ... and for this many cycles beyond that: <input type = "number" id = "input_reaction_extra_cycles" min = "0" max = "100" step = "1" value = "0">)<br>
 (Note that I've put in a hard limit of 10,000 cycles to keep things somewhat reasonable.)<br><br>
 
-Frames per cycle: <input type = "number" id = "input_frames_per_cycle" min = "1" step = "1" value = "20"><br>
+Frames per cycle: <input type = "number" id = "input_frames_per_cycle" min = "1" step = "1" value = "24"><br>
 At this point you should think ahead to the video you're going to stitch together from the pile of sequential static images your scene is going to give you.  You should consider what sort of framerate you want and how long each cycle should last.  Then you should math those numbers together and get a number for the frames-per-cycle box above.
+<br><br>
+As a hopefully helpful reference for where to start, I usually make my videos at 60fps.  At that framerate, I find that 24 frames per cycle works well for shorter animations, while 18 frames per cycle can keep longer animations from dragging on too long and still keep clear what the reaction is doing.
 <br><br>
 <button style = "text-align:center" id = "for_real_button" onclick = "gray_and_go()">
 DO IT!<br>
@@ -8446,9 +8544,23 @@ And finally, here's your actual .ini file:<br>
 <textarea id = "real_scene_output" cols="80" rows="15" readonly></textarea>
 <button id = "select_real_scene" onclick = "select_real_scene_fn()">Select scene text</button><br><br>
 
-Save them both somewhere, open the scene file in Pov-Ray, click the "Ini" button along the top, and choose that .ini file you just made.  Then go find something else to do, because once you click "Render," your computer will be a bit busy.
+Save them both somewhere, open the scene file in Pov-Ray, click the "Ini" button along the top, and choose that .ini file you just made.  Select a resolution from the dropdown in the top-left, below the main toolbar, and then go find something else to do, because once you click "Render," your computer will be a bit busy.
 <br><br>
-</p>
+You may want to try the "<span style = "font-family:Monospace">[Anim (test render) 640x360]</span>" resolution first.  This will produce a small and ugly animation of your solution, but it will produce it very quickly.  This way you can verify that your solution worked correctly before you invest a lot of time rendering the real thing.
+<br><br>
+<b>Troubleshooting tip:</b> POV-Ray may fail during long renders, perhaps a few thousand frames in.  This appears to be a problem with POV-Ray.  But all is not lost!  you can resume your render from the point it failed.  Here's how:
+<ol>
+  <li>Go to the directory where POV-Ray put its output images.</li>
+  <li>Find the last image it produced and note the number at the end of it.</li>
+  <li>Open your .ini file in your favorite text editor.  If you don't have a favorite, you can open it in POV-Ray by clicking the "Ini" button on the toolbar and then clicking the "Edit" button in the "Ini file:" section.</li>
+  <li>Find the section for the resolution you chose.  This will be headed by one of the bracketed lines such as "<span style = "font-family:Monospace">[Anim 1920x1080]</span>".</li>
+  <li>Find the line in that section that begins "<span style = "font-family:Monospace">Subset_Start_Frame=</span>".  If you haven't tried this method before, the number after that should be <span style = "font-family:Monospace">0</span>.</li>
+  <li>Change that number to the number you noted above and save the file.</li>
+  <li>Go to POV-Ray and start the render.  It will pick up from that point.</li>
+  <li>Repeat as (hopefully minimally) necessary.</li>
+</ol>
+Of course, if you want to start over later, change that line back to "<span style = "font-family:Monospace">Subset_Start_Frame=0</span>".
+</div>
 
 <hr>
 
