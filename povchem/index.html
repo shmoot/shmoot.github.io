@@ -8434,7 +8434,7 @@ Now, use this thing below to draw a molecule.  Select atoms with the drop-down m
 <div>
 <br><br>
 
-<b>Section 3:</b> Now here's what you can do with that:
+Now here's what you can do with that molecule:
 <br><br>
 
 <table border = 0 cellpadding = 5 cellspacing = 2 style = "text-align:left"><tbody>
@@ -8477,10 +8477,10 @@ Some more notes:<br>
   <li>Each input can supply up to three molecule types.  These molecules will be shown as preview labels in the blank space beside the input areas.</li>
   <li>Each output can display a single molecule as a preview label in the blank space beside the output area.</li>
   <li>Use only the upper white boxes unless you are creating a label for large output &#968;.  Any use of the lower gray boxes for anything other than large output &#968; will be rejected.</li>
-  <li>The input sequences describe the order in which molecules will arrive at those inputs.
+  <li>The input sequences describe the order in which the molecules assigned as A1-A3 and B1-B3 will arrive at their respective inputs.
     <ul>
       <li>If the end of an input sequence is reached, the sequence repeats from the beginning.</li>
-      <li>If an input only sends in a single type of molecule, the sequence "A1" or "B1" is sufficient for the entire input sequence.</li>
+      <li>If an input only sends in a single type of molecule, a single molecule type symbol is sufficient for the entire input sequence (i.e. all that would be needed for the input sequence could be just "A1").</li>
       <li>If Spacechem sends your in-game solution different molecules in random order, pay close attention to the ordering you end up getting and replicate it here.  (Or mix it up; a well-built solution should be able to handle that, right?)</li>
     </ul>
   </li>
@@ -8515,18 +8515,21 @@ OR...<br><br>
 
 Simulate the reaction and generate the real, animated, thing-you-came-here-for scene:<br><br>
 
-Run until... <select id = "how_long_to_run">
+<ul>
+<li>Run until... <select id = "how_long_to_run">
   <option>this many molecules have been delivered to output &#968;:</option>
   <option>this many molecules have been delivered to output &#969;:</option>
   <option>this many cycles have passed:</option>
 </select> <input type = "number" id = "input_reaction_limit" min = "1" max = "10000" step = "1" value = "4">
 (optional: ... and for this many cycles beyond that: <input type = "number" id = "input_reaction_extra_cycles" min = "0" max = "100" step = "1" value = "0">)<br>
-(Note that I've put in a hard limit of 10,000 cycles to keep things somewhat reasonable.)<br><br>
+(Note that I've put in a hard limit of 10,000 cycles to keep things somewhat reasonable.)<br><br></li>
 
-Frames per cycle: <input type = "number" id = "input_frames_per_cycle" min = "1" step = "1" value = "24"><br>
+<li>Frames per cycle: <input type = "number" id = "input_frames_per_cycle" min = "1" step = "1" value = "24"><br>
 At this point you should think ahead to the video you're going to stitch together from the pile of sequential static images your scene is going to give you.  You should consider what sort of framerate you want and how long each cycle should last.  Then you should math those numbers together and get a number for the frames-per-cycle box above.
 <br><br>
-As a hopefully helpful reference for where to start, I usually make my videos at 60fps.  At that framerate, I find that 24 frames per cycle works well for shorter animations, while 18 frames per cycle can keep longer animations from dragging on too long and still keep clear what the reaction is doing.
+As a hopefully helpful reference for where to start, I usually make my videos at 60fps.  At that framerate, I find that 24 frames per cycle works well for shorter animations, while 18 frames per cycle can keep longer animations from dragging on too long and still keep clear what the reaction is doing.</li>
+</ul>
+
 <br><br>
 <button style = "text-align:center" id = "for_real_button" onclick = "gray_and_go()">
 DO IT!<br>
