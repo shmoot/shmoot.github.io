@@ -213,10 +213,13 @@ var VERIFY_BAD_BOND = "all bonds must have atoms on both ends";
 var VERIFY_NOT_BIG_PSI = "the gray regions may only be used for a label for large output \u03c8";
 var VERIFY_NOT_CONNECTED = "there cannot be more than one molecule in there -- connect the separate pieces";
 var VERIFY_WHOOPS = "bond mismatch -- this one may be my fault";
-var VERIFY_WARN_EXCESS_BONDS = "Warning: an atom has more bonds than it can usually make";
+// var VERIFY_WARN_EXCESS_BONDS = "Warning: an atom has more bonds than it can usually make";
+var VERIFY_WARN_EXCESS_BONDS = "An atom has more bonds than it can usually make";
 var VERIFY_COLLISION = "two or more atoms occupy the same spot -- this one's got to be my fault, sorry";
 var VERIFY_ERROR = "The function encountered an error";
 
+// this thing, now that I want to make warnings and errors more prominent
+var warning_error_timer_ref;
 
 // a few functions to make sure some strings are good
 
@@ -633,7 +636,8 @@ function verify_molecule(allow_gray)
     ref = document.getElementById("l" + loop + "_atom_select");
     if(ref == null)
     {
-      console_write("Error: bad id");
+      // console_write("Error: bad id");
+      error_write("bad id");
       label_atoms.length = 0;
       return VERIFY_ERROR;
     }
@@ -654,7 +658,8 @@ function verify_molecule(allow_gray)
       ref_list = document.getElementsByClassName("l" + (loop - 4) + "l" + loop + "bond");
       if(ref_list.length != 3)
       {
-        console_write("Error: something wrong there");
+        // console_write("Error: something wrong there");
+        error_write("something wrong there");
         label_atoms.length = 0;
         return VERIFY_ERROR;
       }
@@ -669,7 +674,8 @@ function verify_molecule(allow_gray)
       ref_list = document.getElementsByClassName("l" + loop + "l" + (loop + 4) + "bond");
       if(ref_list.length != 3)
       {
-        console_write("Error: something wrong there");
+        // console_write("Error: something wrong there");
+        error_write("something wrong there");
         label_atoms.length = 0;
         return VERIFY_ERROR;
       }
@@ -689,7 +695,8 @@ function verify_molecule(allow_gray)
       ref_list = document.getElementsByClassName("l" + (loop - 1) + "l" + loop + "bond");
       if(ref_list.length != 3)
       {
-        console_write("Error: something wrong there");
+        // console_write("Error: something wrong there");
+        error_write("something wrong there");
         label_atoms.length = 0;
         return VERIFY_ERROR;
       }
@@ -704,7 +711,8 @@ function verify_molecule(allow_gray)
       ref_list = document.getElementsByClassName("l" + loop + "l" + (loop + 1) + "bond");
       if(ref_list.length != 3)
       {
-        console_write("Error: something wrong there");
+        // console_write("Error: something wrong there");
+        error_write("something wrong there");
         label_atoms.length = 0;
         return VERIFY_ERROR;
       }
@@ -743,7 +751,8 @@ function verify_molecule(allow_gray)
       (label_atoms[loop].atomic_number > 113) ||
       (label_atoms[loop].atomic_number != Math.round(label_atoms[loop].atomic_number)))
     {
-      console_write("Error: bad atomic number " + label_atoms[loop].atomic_number);
+      // console_write("Error: bad atomic number " + label_atoms[loop].atomic_number);
+      error_write("bad atomic number " + label_atoms[loop].atomic_number);
       label_atoms.length = 0;
       return VERIFY_ERROR;
     }
@@ -800,7 +809,8 @@ function verify_molecule(allow_gray)
       label_atoms[loop].bond_left + label_atoms[loop].bond_right);
     if(something_useful > max_bonds[label_atoms[loop].atomic_number])
     {
-      console_write(VERIFY_WARN_EXCESS_BONDS + " (" + something_useful +
+      // console_write(VERIFY_WARN_EXCESS_BONDS + " (" + something_useful +
+      warning_write(VERIFY_WARN_EXCESS_BONDS + " (" + something_useful +
         " bonds vs. max. " + max_bonds[label_atoms[loop].atomic_number] +
         " on " + atom_names[label_atoms[loop].atomic_number] +
         " at position " + label_atoms[loop].position + ")");
@@ -810,7 +820,8 @@ function verify_molecule(allow_gray)
   // now we can flood
   if(!flood_fill(label_atoms[0].position, WD_NOTHING, true))
   {
-    console_write("Error during flood fill");
+    // console_write("Error during flood fill");
+    error_write("Error during flood fill");
     return VERIFY_ERROR;
   }
 
@@ -863,7 +874,8 @@ function move_left(from_where)
 {
   if(typeof(from_where) != typeof(1))
   {
-    console_write("Error in move_left(): type mismatch");
+    // console_write("Error in move_left(): type mismatch");
+    error_write("Error in move_left(): type mismatch");
     return 0;
   }
 
@@ -886,7 +898,8 @@ function move_right(from_where)
 {
   if(typeof(from_where) != typeof(1))
   {
-    console_write("Error in move_right(): type mismatch");
+    // console_write("Error in move_right(): type mismatch");
+    error_write("Error in move_right(): type mismatch");
     return 0;
   }
 
@@ -909,7 +922,8 @@ function move_up(from_where)
 {
   if(typeof(from_where) != typeof(1))
   {
-    console_write("Error in move_up(): type mismatch");
+    // console_write("Error in move_up(): type mismatch");
+    error_write("Error in move_up(): type mismatch");
     return 0;
   }
 
@@ -925,7 +939,8 @@ function move_down(from_where)
 {
   if(typeof(from_where) != typeof(1))
   {
-    console_write("Error in move_down(): type mismatch");
+    // console_write("Error in move_down(): type mismatch");
+    error_write("Error in move_down(): type mismatch");
     return 0;
   }
 
@@ -944,19 +959,22 @@ function move_far(from_where, how_far, direction)
   if((typeof(from_where) != typeof(1)) || (typeof(how_far) != typeof(1)) ||
     (typeof(direction) != typeof("")))
   {
-    console_write("Error in move_far(): type mismatch");
+    // console_write("Error in move_far(): type mismatch");
+    error_write("Error in move_far(): type mismatch");
     return 0;
   }
 
   if(!validate_direction(direction))
   {
-    console_write("Error in move_far(): bad direction");
+    // console_write("Error in move_far(): bad direction");
+    error_write("Error in move_far(): bad direction");
     return 0;
   }
 
   if(Math.round(how_far) != how_far)
   {
-    console_write("Error in move_far(): fractions not allowed");
+    // console_write("Error in move_far(): fractions not allowed");
+    error_write("Error in move_far(): fractions not allowed");
     return 0;
   }
 
@@ -998,7 +1016,8 @@ function move_far(from_where, how_far, direction)
     }
     else
     {
-      console_write("Error in move_far(): invalid direction");
+      // console_write("Error in move_far(): invalid direction");
+      error_write("Error in move_far(): invalid direction");
       return 0;
     }
   }
@@ -1091,19 +1110,22 @@ function what_stuff_is_at_place(stuff, place, dir_bool)
 
   if(typeof(stuff) != typeof(return_val))
   {
-    console_write("Error in what_stuff_is_at_place(): parameter is wrong type");
+    // console_write("Error in what_stuff_is_at_place(): parameter is wrong type");
+    error_write("Error in what_stuff_is_at_place(): parameter is wrong type");
     return return_val;
   }
 
   if(typeof(place) != typeof(1))
   {
-    console_write("Error in what_stuff_is_at_place(): parameter is wrong type");
+    // console_write("Error in what_stuff_is_at_place(): parameter is wrong type");
+    error_write("Error in what_stuff_is_at_place(): parameter is wrong type");
     return return_val;
   }
 
   if(typeof(dir_bool) != typeof(false))
   {
-    console_write("Error in what_stuff_is_at_place(): parameter is wrong type");
+    // console_write("Error in what_stuff_is_at_place(): parameter is wrong type");
+    error_write("Error in what_stuff_is_at_place(): parameter is wrong type");
     return return_val;
   }
 
@@ -1194,7 +1216,8 @@ function what_stuff_is_at_place(stuff, place, dir_bool)
   }
   else
   {
-    console_write("Error in what_stuff_is_at_place(): unexpected value");
+    // console_write("Error in what_stuff_is_at_place(): unexpected value");
+    error_write("Error in what_stuff_is_at_place(): unexpected value");
     return return_val;
   }
 
@@ -1218,19 +1241,22 @@ function remove_a_control(where, which_color, dir_bool)
 
   if(!validate_grid(where))
   {
-    console_write("Error: bad spot");
+    // console_write("Error: bad spot");
+    error_write("bad spot");
     return false;
   }
 
   if(!validate_color(which_color))
   {
-    console_write("Error: bad color");
+    // console_write("Error: bad color");
+    error_write("bad color");
     return false;
   }
 
   if(typeof(dir_bool) != typeof(false))
   {
-    console_write("Error: that's not a bool");
+    // console_write("Error: that's not a bool");
+    error_write("that's not a bool");
     return false;
   }
 
@@ -1253,13 +1279,15 @@ function remove_a_control(where, which_color, dir_bool)
           else if(reactor_things_array[loop].direction == RIGHT_STR) id_string += "r";
           else
           {
-            console_write("Error: bad direction");
+            // console_write("Error: bad direction");
+            error_write("bad direction");
             return false;
           }
           ref = document.getElementById(id_string);
           if(ref == null)
           {
-            console_write("Error: bad id");
+            // console_write("Error: bad id");
+            error_write("bad id");
             return false;
           }
           ref.innerHTML = "";
@@ -1297,7 +1325,8 @@ function remove_a_control(where, which_color, dir_bool)
         ref = document.getElementById(id_string);
         if(ref == null)
         {
-          console_write("Error: bad id");
+          // console_write("Error: bad id");
+          error_write("bad id");
           return false;
         }
         ref.innerHTML = "";
@@ -1328,7 +1357,8 @@ function grid_button_handler(which_button)
   if((position_ref == null) || (type_ref == null) || (color_ref == null) ||
     (direction_ref == null) || (atom_ref == null))
   {
-    console_write("Error: reference error in add_grid_button_handler()");
+    // console_write("Error: reference error in add_grid_button_handler()");
+    error_write("reference error in add_grid_button_handler()");
     return;
   }
 
@@ -1336,13 +1366,15 @@ function grid_button_handler(which_button)
   where = Number(position_ref.value);
   if(isNaN(where))
   {
-    console_write("Error: invalid grid position");
+    // console_write("Error: invalid grid position");
+    error_write("invalid grid position");
     return;
   }
 
   if((where < 1) || (where > 80) || (Math.round(where) != where))
   {
-    console_write("Error: invalid grid position");
+    // console_write("Error: invalid grid position");
+    error_write("invalid grid position");
     return;
   }
 
@@ -1350,7 +1382,8 @@ function grid_button_handler(which_button)
   what = type_ref.value;
   if(!validate_name(what))
   {
-    console_write("Error: invalid object " + String(what));
+    // console_write("Error: invalid object " + String(what));
+    error_write("invalid object " + String(what));
     return;
   }
 
@@ -1358,7 +1391,8 @@ function grid_button_handler(which_button)
   what_color = color_ref.value;
   if(!validate_color(what_color))
   {
-    console_write("Error: invalid color " + String(what_color));
+    // console_write("Error: invalid color " + String(what_color));
+    error_write("invalid color " + String(what_color));
     return;
   }
 
@@ -1366,7 +1400,8 @@ function grid_button_handler(which_button)
   which_way = direction_ref.value;
   if(!validate_direction(which_way))
   {
-    console_write("Error: invalid direction " + String(which_way));
+    // console_write("Error: invalid direction " + String(which_way));
+    error_write("invalid direction " + String(which_way));
     return;
   }
 
@@ -1375,7 +1410,8 @@ function grid_button_handler(which_button)
   if((which_atom < 1) || (which_atom > 113) ||
     (which_atom != Math.round(which_atom)))
   {
-    console_write("Error: invalid atom selection");
+    // console_write("Error: invalid atom selection");
+    error_write("invalid atom selection");
     return;
   }
 
@@ -1393,7 +1429,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1402,7 +1439,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1411,7 +1449,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1420,7 +1459,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1429,7 +1469,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1438,7 +1479,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1447,7 +1489,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1456,7 +1499,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1465,7 +1509,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1474,7 +1519,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1483,7 +1529,8 @@ function grid_button_handler(which_button)
       grid_ref = document.getElementById(id_string);
       if(grid_ref == null)
       {
-        console_write("Error: id not found");
+        // console_write("Error: id not found");
+        error_write("id not found");
         return;
       }
       grid_ref.innerHTML = "";
@@ -1504,7 +1551,8 @@ function grid_button_handler(which_button)
     grid_ref = document.getElementById("g15red_con");
     if(grid_ref == null)
     {
-      console_write("Error: id not found");
+      // console_write("Error: id not found");
+      error_write("id not found");
       return;
     }
     grid_ref.innerHTML = "Start(L)";
@@ -1514,7 +1562,8 @@ function grid_button_handler(which_button)
     grid_ref = document.getElementById("g65blue_con");
     if(grid_ref == null)
     {
-      console_write("Error: id not found");
+      // console_write("Error: id not found");
+      error_write("id not found");
       return;
     }
     grid_ref.innerHTML = "Start(L)";
@@ -1535,7 +1584,8 @@ function grid_button_handler(which_button)
       {
         if(move_right(where) == 0)
         {
-          console_write("Error: cannot place target in rightmost column.");
+          // console_write("Error: cannot place target in rightmost column.");
+          error_write("cannot place target in rightmost column.");
           return;
         }
 
@@ -1544,7 +1594,8 @@ function grid_button_handler(which_button)
           move_right(where), false);
         if(so_what_was_there.length != 0)
         {
-          console_write("Error: there's something blocking the right half of the target at " + move_right(where) + ".  Remove it first.");
+          // console_write("Error: there's something blocking the right half of the target at " + move_right(where) + ".  Remove it first.");
+          error_write("there's something blocking the right half of the target at " + move_right(where) + ".  Remove it first.");
           return;
         }
       }
@@ -1558,7 +1609,8 @@ function grid_button_handler(which_button)
       // aw heck that, I already found that it's much easier simply to complain
       if(so_what_was_there.length != 0)
       {
-        console_write("Error: there's a device at position " + where + " already.  Remove it first.");
+        // console_write("Error: there's a device at position " + where + " already.  Remove it first.");
+        error_write("there's a device at position " + where + " already.  Remove it first.");
         return;
       }
 
@@ -1569,13 +1621,15 @@ function grid_button_handler(which_button)
       {
         if(bonder_spots.length > 8)
         {
-          console_write("Error: way too many bonders already -- might want to look into that.");
+          // console_write("Error: way too many bonders already -- might want to look into that.");
+          error_write("way too many bonders already -- might want to look into that.");
           return;
         }
 
         if(bonder_spots.length == 8)
         {
-          console_write("Error: there are already the maximum 8 bonders on the grid.  Remove one first.");
+          // console_write("Error: there are already the maximum 8 bonders on the grid.  Remove one first.");
+          error_write("there are already the maximum 8 bonders on the grid.  Remove one first.");
           return;
         }
 
@@ -1583,7 +1637,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById(id_string);
         if(grid_ref == null)
         {
-          console_write("Error: bad reference");
+          // console_write("Error: bad reference");
+          error_write("bad reference");
           return;
         }
 
@@ -1599,7 +1654,8 @@ function grid_button_handler(which_button)
           if((sensor_spot < 1) || (sensor_spot > 80) ||
             (sensor_spot != Math.round(sensor_spot)))
           {
-            console_write("Error: sensor_spot got wonked somehow.");
+            // console_write("Error: sensor_spot got wonked somehow.");
+            error_write("sensor_spot got wonked somehow.");
             return;
           }
 
@@ -1607,7 +1663,8 @@ function grid_button_handler(which_button)
           grid_ref = document.getElementById(id_string);
           if(grid_ref == null)
           {
-            console_write("Error: reference problem");
+            // console_write("Error: reference problem");
+            error_write("reference problem");
             return;
           }
 
@@ -1618,7 +1675,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById(id_string);
         if(grid_ref == null)
         {
-          console_write("Error: reference problem");
+          // console_write("Error: reference problem");
+          error_write("reference problem");
           return;
         }
 
@@ -1641,7 +1699,8 @@ function grid_button_handler(which_button)
         if(((fuse_left == 0) && (fuse_right != 0)) ||
           ((fuse_left != 0) && (fuse_right == 0)))
         {
-          console_write("Error: wonked");
+          // console_write("Error: wonked");
+          error_write("wonked");
           return;
         }
 
@@ -1650,19 +1709,22 @@ function grid_button_handler(which_button)
           // remove the old target first
           if(!validate_grid(fuse_left))
           {
-            console_write("Error: bork");
+            // console_write("Error: bork");
+            error_write("bork");
             return;
           }
           if(!validate_grid(fuse_right))
           {
-            console_write("Error: heck");
+            // console_write("Error: heck");
+            error_write("heck");
             return;
           }
 
           grid_ref = document.getElementById("g" + fuse_left + "reac");
           if(grid_ref == null)
           {
-            console_write("Error: borf");
+            // console_write("Error: borf");
+            error_write("borf");
             return;
           }
           grid_ref.innerHTML = "";
@@ -1670,7 +1732,8 @@ function grid_button_handler(which_button)
           grid_ref = document.getElementById("g" + fuse_right + "reac");
           if(grid_ref == null)
           {
-            console_write("Error: borf");
+            // console_write("Error: borf");
+            error_write("borf");
             return;
           }
           grid_ref.innerHTML = "";
@@ -1680,7 +1743,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + where + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: blark");
+          // console_write("Error: blark");
+          error_write("blark");
           return;
         }
         grid_ref.innerHTML = "Fuse(L)";
@@ -1688,7 +1752,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + move_right(where) + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: blork");
+          // console_write("Error: blork");
+          error_write("blork");
           return;
         }
         grid_ref.innerHTML = "Fuse(R)";
@@ -1711,7 +1776,8 @@ function grid_button_handler(which_button)
         if(((fiss_left == 0) && (fiss_right != 0)) ||
           ((fiss_left != 0) && (fiss_right == 0)))
         {
-          console_write("Error: wumped");
+          // console_write("Error: wumped");
+          error_write("wumped");
           return;
         }
 
@@ -1720,19 +1786,22 @@ function grid_button_handler(which_button)
           // remove the old target first
           if(!validate_grid(fiss_left))
           {
-            console_write("Error: bronk");
+            // console_write("Error: bronk");
+            error_write("bronk");
             return;
           }
           if(!validate_grid(fiss_right))
           {
-            console_write("Error: well darn");
+            // console_write("Error: well darn");
+            error_write("well darn");
             return;
           }
 
           grid_ref = document.getElementById("g" + fiss_left + "reac");
           if(grid_ref == null)
           {
-            console_write("Error: brorf");
+            // console_write("Error: brorf");
+            error_write("brorf");
             return;
           }
           grid_ref.innerHTML = "";
@@ -1740,7 +1809,8 @@ function grid_button_handler(which_button)
           grid_ref = document.getElementById("g" + fiss_right + "reac");
           if(grid_ref == null)
           {
-            console_write("Error: borf");
+            // console_write("Error: borf");
+            error_write("borf");
             return;
           }
           grid_ref.innerHTML = "";
@@ -1750,7 +1820,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + where + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: nuts");
+          // console_write("Error: nuts");
+          error_write("nuts");
           return;
         }
         grid_ref.innerHTML = "Fiss(L)";
@@ -1758,7 +1829,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + move_right(where) + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: brumpf");
+          // console_write("Error: brumpf");
+          error_write("brumpf");
           return;
         }
         grid_ref.innerHTML = "Fiss(R)";
@@ -1780,7 +1852,8 @@ function grid_button_handler(which_button)
       {
         if((tunnel_one != 0) && (tunnel_other != 0))
         {
-          console_write("Error: two tunnels already placed.  Remove one first.");
+          // console_write("Error: two tunnels already placed.  Remove one first.");
+          error_write("Two tunnels already placed.  Remove one first.");
           return;
         }
 
@@ -1796,7 +1869,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + where + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: well shucks");
+          // console_write("Error: well shucks");
+          error_write("well shucks");
           return;
         }
 
@@ -1843,7 +1917,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById(id_string);
         if(grid_ref == null)
         {
-          console_write("Error: bad id... and something may have changed.");
+          // console_write("Error: bad id... and something may have changed.");
+          error_write("bad id... and something may have changed.");
           return;
         }
         if(which_way == UP_STR) grid_ref.innerHTML = "^";
@@ -1876,7 +1951,8 @@ function grid_button_handler(which_button)
               grid_ref = document.getElementById(id_string);
               if(grid_ref == null)
               {
-                console_write("Error: bad id");
+                // console_write("Error: bad id");
+                error_write("bad id");
                 return;
               }
               grid_ref.innerHTML = "";
@@ -1893,7 +1969,8 @@ function grid_button_handler(which_button)
           grid_ref = document.getElementById(id_string);
           if(grid_ref == null)
           {
-            console_write("Error: bad id, and it was a bad time for this to happen.");
+            // console_write("Error: bad id, and it was a bad time for this to happen.");
+            error_write("bad id, and it was a bad time for this to happen.");
             return;
           }
           id_string = "Start(";
@@ -1916,7 +1993,8 @@ function grid_button_handler(which_button)
           so_what_was_there = what_stuff_is_at_place(what_color, where, false);
           if(so_what_was_there == START_STR)
           {
-            console_write("Error: cannot replace a Start instruction.  Place the Start somewhere else first.");
+            // console_write("Error: cannot replace a Start instruction.  Place the Start somewhere else first.");
+            error_write("Cannot replace a Start instruction.  Place the Start somewhere else first.");
             return;
           }
 
@@ -1935,7 +2013,8 @@ function grid_button_handler(which_button)
           grid_ref = document.getElementById(id_string);
           if(grid_ref == null)
           {
-            console_write("Error: bad id");
+            // console_write("Error: bad id");
+            error_write("bad id");
             return;
           }
 
@@ -1980,7 +2059,8 @@ function grid_button_handler(which_button)
           else if(what == SWAP_STR) id_string = "SWAP";
           else
           {
-            console_write("Error: really shouldn't have hit this part.");
+            // console_write("Error: really shouldn't have hit this part.");
+            error_write("really shouldn't have hit this part.");
             return;
           }
           grid_ref.innerHTML = id_string;
@@ -2013,7 +2093,8 @@ function grid_button_handler(which_button)
       so_what_was_there = what_stuff_is_at_place(REACTOR_STR, where, false);
       if(so_what_was_there != what)
       {
-        console_write("Error: cannot remove -- no " + what + " at " + where + ".");
+        // console_write("Error: cannot remove -- no " + what + " at " + where + ".");
+        error_write("cannot remove -- no " + what + " at " + where + ".");
         return;
       }
 
@@ -2023,7 +2104,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + where + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: bad id");
+          // console_write("Error: bad id");
+          error_write("bad id");
           return;
         }
         grid_ref.innerHTML = "";
@@ -2035,7 +2117,8 @@ function grid_button_handler(which_button)
         grid_ref = document.getElementById("g" + where + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: bad id");
+          // console_write("Error: bad id");
+          error_write("bad id");
           return;
         }
         grid_ref.innerHTML = "";
@@ -2051,7 +2134,8 @@ function grid_button_handler(which_button)
         }
         else
         {
-          console_write("Error: now that's odd...");
+          // console_write("Error: now that's odd...");
+          error_write("now that's odd...");
           return;
         }
 
@@ -2071,20 +2155,23 @@ function grid_button_handler(which_button)
       {
         if(!((validate_grid(fuse_left)) && (validate_grid(fuse_right))))
         {
-          console_write("Error: well dangit");
+          // console_write("Error: well dangit");
+          error_write("well dangit");
           return;
         }
         grid_ref = document.getElementById("g" + fuse_left + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: bad id");
+          // console_write("Error: bad id");
+          error_write("bad id");
           return;
         }
         grid_ref.innerHTML = "";
         grid_ref = document.getElementById("g" + fuse_right + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: well nuts to that");
+          // console_write("Error: well nuts to that");
+          error_write("well nuts to that");
           return;
         }
         grid_ref.innerHTML = "";
@@ -2097,20 +2184,23 @@ function grid_button_handler(which_button)
         // same thing as above except with "fiss"!
         if(!((validate_grid(fiss_left)) && (validate_grid(fiss_right))))
         {
-          console_write("Error: well dangit");
+          // console_write("Error: well dangit");
+          error_write("well dangit");
           return;
         }
         grid_ref = document.getElementById("g" + fiss_left + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: bad id");
+          // console_write("Error: bad id");
+          error_write("bad id");
           return;
         }
         grid_ref.innerHTML = "";
         grid_ref = document.getElementById("g" + fiss_right + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: well nuts to that");
+          // console_write("Error: well nuts to that");
+          error_write("well nuts to that");
           return;
         }
         grid_ref.innerHTML = "";
@@ -2124,14 +2214,16 @@ function grid_button_handler(which_button)
         loop = bonder_spots.indexOf(where);
         if(loop < 0)
         {
-          console_write("Error: darnit, I was sure I had one of those there!");
+          // console_write("Error: darnit, I was sure I had one of those there!");
+          error_write("darnit, I was sure I had one of those there!");
           return;
         }
         bonder_spots.splice(loop, 1);
         grid_ref = document.getElementById("g" + where + "reac");
         if(grid_ref == null)
         {
-          console_write("Error: bad id");
+          // console_write("Error: bad id");
+          error_write("bad id");
           return;
         }
         grid_ref.innerHTML = "";
@@ -2147,14 +2239,16 @@ function grid_button_handler(which_button)
         so_what_was_there = what_stuff_is_at_place(what_color, where, true);
         if(!validate_direction(so_what_was_there))
         {
-          console_write("Error: cannot remove -- no " + what_color + " " + what + " at " + where + ".");
+          // console_write("Error: cannot remove -- no " + what_color + " " + what + " at " + where + ".");
+          error_write("cannot remove -- no " + what_color + " " + what + " at " + where + ".");
           return;
         }
 
         // even if it's not the same direction, remove it anyway
         if(!remove_a_control(where, what_color, true))
         {
-          console_write("Error removing that");
+          // console_write("Error removing that");
+          error_write("Error removing that");
           return;
         }
 
@@ -2168,12 +2262,14 @@ function grid_button_handler(which_button)
         so_what_was_there = what_stuff_is_at_place(what_color, where, false);
         if(so_what_was_there != what)
         {
-          console_write("Error: cannot remove -- no " + what_color + " " + what + " at " + where + ".");
+          // console_write("Error: cannot remove -- no " + what_color + " " + what + " at " + where + ".");
+          error_write("cannot remove -- no " + what_color + " " + what + " at " + where + ".");
           return;
         }
         if(so_what_was_there == START_STR)
         {
-          console_write("Error: cannot remove Start instruction.  You can place it somewhere else, though.");
+          // console_write("Error: cannot remove Start instruction.  You can place it somewhere else, though.");
+          error_write("cannot remove Start instruction.  You can place it somewhere else, though.");
           return;
         }
 
@@ -2193,7 +2289,8 @@ function grid_button_handler(which_button)
           }
           if(loop >= reactor_things_array.length)
           {
-            console_write("Error... and quite an odd one, too.");
+            // console_write("Error... and quite an odd one, too.");
+            error_write("Error... and quite an odd one, too.");
             return;
           }
 
@@ -2209,7 +2306,8 @@ function grid_button_handler(which_button)
         // so... validated the control and it's not a start -- out it goes
         if(!remove_a_control(where, what_color, false))
         {
-          console_write("Error removing that");
+          // console_write("Error removing that");
+          error_write("Error removing that");
           return;
         }
 
@@ -2220,7 +2318,8 @@ function grid_button_handler(which_button)
   }
   else
   {
-    console_write("Error, I guess: unknown how we got to this function");
+    // console_write("Error, I guess: unknown how we got to this function");
+    error_write("Error, I guess: unknown how we got to this function");
     return;
   }
 
@@ -2229,7 +2328,8 @@ function grid_button_handler(which_button)
   grid_ref = document.getElementById("preview_ini_output");
   if(grid_ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   grid_ref.value = "";
@@ -2237,7 +2337,8 @@ function grid_button_handler(which_button)
   grid_ref = document.getElementById("preview_scene_output");
   if(grid_ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   grid_ref.value = "";
@@ -2245,7 +2346,8 @@ function grid_button_handler(which_button)
   grid_ref = document.getElementById("real_ini_output");
   if(grid_ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   grid_ref.value = "";
@@ -2253,7 +2355,8 @@ function grid_button_handler(which_button)
   grid_ref = document.getElementById("real_scene_output");
   if(grid_ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   grid_ref.value = "";
@@ -2274,7 +2377,8 @@ function molecule_draw_clear_function()
     ref = document.getElementById(id_string);
     if(ref == null)
     {
-      console_write("Error: bad id");
+      // console_write("Error: bad id");
+      error_write("bad id");
       return;
     }
     ref.selectedIndex = 0;
@@ -2288,7 +2392,8 @@ function molecule_draw_clear_function()
       class_list = document.getElementsByClassName(id_string);
       if(class_list.length != 3)
       {
-        console_write("Error: bad class or unexpected length");
+        // console_write("Error: bad class or unexpected length");
+        error_write("bad class or unexpected length");
         return;
       }
       class_list[0].checked = false;
@@ -2301,7 +2406,8 @@ function molecule_draw_clear_function()
       class_list = document.getElementsByClassName(id_string);
       if(class_list.length != 3)
       {
-        console_write("Error: bad class or unexpected length");
+        // console_write("Error: bad class or unexpected length");
+        error_write("bad class or unexpected length");
         return;
       }
       class_list[0].checked = false;
@@ -2360,7 +2466,8 @@ function set_a1_fn()
   ref = document.getElementById("a1_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2375,7 +2482,8 @@ function set_a1_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2402,7 +2510,8 @@ function set_a2_fn()
   ref = document.getElementById("a2_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2417,7 +2526,8 @@ function set_a2_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2444,7 +2554,8 @@ function set_a3_fn()
   ref = document.getElementById("a3_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2459,7 +2570,8 @@ function set_a3_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2486,7 +2598,8 @@ function set_b1_fn()
   ref = document.getElementById("b1_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2501,7 +2614,8 @@ function set_b1_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2528,7 +2642,8 @@ function set_b2_fn()
   ref = document.getElementById("b2_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2543,7 +2658,8 @@ function set_b2_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2570,7 +2686,8 @@ function set_b3_fn()
   ref = document.getElementById("b3_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2585,7 +2702,8 @@ function set_b3_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2617,7 +2735,8 @@ function add_fn(what)
   else if(what.id === "add_b3") useful_thing = "B3";
   else
   {
-    console_write("Error... dunno how we got here.");
+    // console_write("Error... dunno how we got here.");
+    error_write("dunno how we got here.");
     return;
   }
 
@@ -2627,7 +2746,8 @@ function add_fn(what)
     ref = document.getElementById("alpha_sequence");
     if(ref == null)
     {
-      console_write("Error: bad id");
+      // console_write("Error: bad id");
+      error_write("bad id");
       return;
     }
     alpha_sequence_array.push(useful_thing);
@@ -2639,7 +2759,8 @@ function add_fn(what)
     ref = document.getElementById("beta_sequence");
     if(ref == null)
     {
-      console_write("Error: bad id");
+      // console_write("Error: bad id");
+      error_write("bad id");
       return;
     }
     beta_sequence_array.push(useful_thing);
@@ -2663,7 +2784,8 @@ function clear_alpha_fn()
   if((ref == null) || (one_ref == null) || (two_ref == null) ||
     (three_ref == null))
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   molecule_a1.length = 0;
@@ -2691,7 +2813,8 @@ function clear_beta_fn()
   if((ref == null) || (one_ref == null) || (two_ref == null) ||
     (three_ref == null))
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   molecule_b1.length = 0;
@@ -2717,7 +2840,8 @@ function set_psi_label_fn()
   label_ref = document.getElementById("psi_label_span");
   if((ref == null) || (label_ref == null))
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2731,7 +2855,8 @@ function set_psi_label_fn()
   }
   else
   {
-    console_write("Error: unexpected value");
+    // console_write("Error: unexpected value");
+    error_write("unexpected value");
     return;
   }
 
@@ -2746,7 +2871,8 @@ function set_psi_label_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2773,7 +2899,8 @@ function set_omega_label_fn()
   ref = document.getElementById("omega_label_span");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -2788,7 +2915,8 @@ function set_omega_label_fn()
 
   if(something_useful != VERIFY_OK)
   {
-    console_write("Error: " + something_useful);
+    // console_write("Error: " + something_useful);
+    error_write("" + something_useful);
     return;
   }
 
@@ -2852,7 +2980,8 @@ function generate_reactor_statics()
   ref = document.getElementById("big_psi_select");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return "";
   }
   if(ref.selectedIndex === 0)
@@ -2865,7 +2994,8 @@ function generate_reactor_statics()
   }
   else
   {
-    console_write("Error: unexpected value");
+    // console_write("Error: unexpected value");
+    error_write("unexpected value");
     return "";
   }
 
@@ -2905,7 +3035,8 @@ function generate_reactor_statics()
   {
     if(!validate_grid(bonder_spots[loop]))
     {
-      console_write("Error: AW HECK");
+      // console_write("Error: AW HECK");
+      error_write("AW HECK");
       return "";
     }
     scene_text += "object {bonder translate ";
@@ -2949,7 +3080,8 @@ function generate_reactor_statics()
   {
     if(!validate_grid(sensor_spot))
     {
-      console_write("Error: temper tantrum");
+      // console_write("Error: temper tantrum");
+      error_write("temper tantrum");
       return "";
     }
 
@@ -2963,7 +3095,8 @@ function generate_reactor_statics()
     if(!((validate_grid(fuse_left)) && (validate_grid(fuse_right)) &&
       ((fuse_left + 1) === fuse_right)))
     {
-      console_write("Error: fusion problem -- so far energy yields from fusion reactions have been less than the energies required to start and maintain the reactions and if they can\'t get that working then humanity\'s energy future looks bleak");
+      // console_write("Error: fusion problem -- so far energy yields from fusion reactions have been less than the energies required to start and maintain the reactions and if they can\'t get that working then humanity\'s energy future looks bleak");
+      error_write("fusion problem -- so far energy yields from fusion reactions have been less than the energies required to start and maintain the reactions and if they can\'t get that working then humanity\'s energy future looks bleak");
       return "";
     }
     scene_text += "object {fusion_target translate <0.5, -0.5, 0> translate ";
@@ -2976,7 +3109,8 @@ function generate_reactor_statics()
     if(!((validate_grid(fiss_left)) && (validate_grid(fiss_right)) &&
       ((fiss_left + 1) === fiss_right)))
     {
-      console_write("Error: fission problem -- though it has been touted by some to be a \"green\" energy source, it can only be called such in the sense that it does not generate greenhouse gases.  The waste it does generate is extremely hazardous to the environment and to human life, and its storage poses a number of logistical and political problems.");
+      // console_write("Error: fission problem -- though it has been touted by some to be a \"green\" energy source, it can only be called such in the sense that it does not generate greenhouse gases.  The waste it does generate is extremely hazardous to the environment and to human life, and its storage poses a number of logistical and political problems.");
+      error_write("fission problem -- though it has been touted by some to be a \"green\" energy source, it can only be called such in the sense that it does not generate greenhouse gases.  The waste it does generate is extremely hazardous to the environment and to human life, and its storage poses a number of logistical and political problems.");
       return "";
     }
     scene_text += "object {fission_target translate <0.5, -0.5, 0> translate ";
@@ -2989,12 +3123,14 @@ function generate_reactor_statics()
     if((validate_grid(tunnel_one) && (tunnel_other === 0)) ||
       (validate_grid(tunnel_other) && (tunnel_one === 0)))
     {
-      console_write("Error: only one quantum tunnel placed; solution must have 0 or 2.");
+      // console_write("Error: only one quantum tunnel placed; solution must have 0 or 2.");
+      error_write("only one quantum tunnel placed; solution must have 0 or 2.");
       return "";
     }
     if(!((validate_grid(tunnel_one)) && (validate_grid(tunnel_other))))
     {
-      console_write("Error: quantum tunnel problem -- that's not at all what quantum tunneling means!  I am getting mad about video games!!");
+      // console_write("Error: quantum tunnel problem -- that's not at all what quantum tunneling means!  I am getting mad about video games!!");
+      error_write("quantum tunnel problem -- that's not at all what quantum tunneling means!  I am getting mad about video games!!");
       return "";
     }
     scene_text += "object {quantum_tunnel translate ";
@@ -3010,17 +3146,20 @@ function generate_reactor_statics()
   {
     if(controls.indexOf(reactor_things_array[loop].object_type) === -1)
     {
-      console_write("Error: thing name problem");
+      // console_write("Error: thing name problem");
+      error_write("thing name problem");
       return "";
     }
     if(!validate_color(reactor_things_array[loop].color))
     {
-      console_write("Error: thing color problem");
+      // console_write("Error: thing color problem");
+      error_write("thing color problem");
       return "";
     }
     if(!validate_grid(reactor_things_array[loop].location))
     {
-      console_write("Error: thing position problem");
+      // console_write("Error: thing position problem");
+      error_write("thing position problem");
     }
 
     // skip drawing sensor redirects and flip flops because, as they
@@ -3048,7 +3187,8 @@ function generate_reactor_statics()
       {
         if(!validate_direction(useful_thing))
         {
-          console_write("Error: the kludge is on the fritz");
+          // console_write("Error: the kludge is on the fritz");
+          error_write("the kludge is on the fritz");
           return "";
         }
         if(useful_thing === UP_STR) kludge = "u";
@@ -3059,7 +3199,8 @@ function generate_reactor_statics()
 
       if(!validate_direction(reactor_things_array[loop].direction))
       {
-        console_write("Error: start direction problem");
+        // console_write("Error: start direction problem");
+        error_write("start direction problem");
         return "";
       }
       if(reactor_things_array[loop].color === RED_STR) scene_text += "red";
@@ -3075,7 +3216,8 @@ function generate_reactor_statics()
     {
       if(!validate_direction(reactor_things_array[loop].direction))
       {
-        console_write("Error: arrow direction problem");
+        // console_write("Error: arrow direction problem");
+        error_write("arrow direction problem");
         return "";
       }
       if(reactor_things_array[loop].color === RED_STR) scene_text += "red";
@@ -3151,14 +3293,16 @@ function generate_reactor_statics()
     {
       if(!validate_direction(reactor_things_array[loop].direction))
       {
-        console_write("Error: redirection direction problem");
+        // console_write("Error: redirection direction problem");
+        error_write("redirection direction problem");
         return "";
       }
       if((reactor_things_array[loop].atom < 1) ||
         (reactor_things_array[loop].atom > 113) ||
         (reactor_things_array[loop].atom != Math.round(reactor_things_array[loop].atom)))
       {
-        console_write("Error: redirection atomic number problem");
+        // console_write("Error: redirection atomic number problem");
+        error_write("redirection atomic number problem");
         return "";
       }
       scene_text += pov_color + "_";
@@ -3181,7 +3325,8 @@ function generate_reactor_statics()
     {
       if(!validate_direction(reactor_things_array[loop].direction))
       {
-        console_write("Error: flip flop direction problem");
+        // console_write("Error: flip flop direction problem");
+        error_write("flip flop direction problem");
         return "";
       }
 
@@ -3241,7 +3386,8 @@ function generate_reactor_statics()
     }
     if(where_are_we_now === 0)
     {
-      console_write("Error: how'd we get this far without having that?");
+      // console_write("Error: how'd we get this far without having that?");
+      error_write("how'd we get this far without having that?");
       return "";
     }
 
@@ -3267,7 +3413,8 @@ function generate_reactor_statics()
 
       if(!validate_grid(where_are_we_now))
       {
-        console_write("Error: try to pin the blame on someone else and make sure your resume is up-to-date.");
+        // console_write("Error: try to pin the blame on someone else and make sure your resume is up-to-date.");
+        error_write("try to pin the blame on someone else and make sure your resume is up-to-date.");
         return "";
       }
 
@@ -3283,13 +3430,15 @@ function generate_reactor_statics()
           where_are_we_now, false);
         if(useful_thing.length === 0)
         {
-          console_write("Error: whoops");
+          // console_write("Error: whoops");
+          error_write("whoops");
           return "";
         }
         if((useful_thing != SENS_REDIR_STR) && (useful_thing != START_STR) &&
           (useful_thing != FLIP_FLOP_STR))
         {
-          console_write("Error: clerical error");
+          // console_write("Error: clerical error");
+          error_write("clerical error");
           return "";
         }
 
@@ -3321,7 +3470,8 @@ function generate_reactor_statics()
         }
         if(!validate_direction(which_way_are_we_going))
         {
-          console_write("Error: wandering");
+          // console_write("Error: wandering");
+          error_write("wandering");
           return "";
         }
 
@@ -3348,7 +3498,8 @@ function generate_reactor_statics()
           where_are_we_now, true);
         if(!validate_direction(which_way_are_we_going))
         {
-          console_write("Error: there wasn\'t, but I could have sworn there was.");
+          // console_write("Error: there wasn\'t, but I could have sworn there was.");
+          error_write("there wasn\'t, but I could have sworn there was.");
           return "";
         }
       }
@@ -3413,7 +3564,8 @@ function generate_reactor_statics()
           // the loop
           if(!validate_direction(useful_thing))
           {
-            console_write("Error: oh, so that's how to factor large numbers efficiently.");
+            // console_write("Error: oh, so that's how to factor large numbers efficiently.");
+            error_write("oh, so that's how to factor large numbers efficiently.");
             return "";
           }
 
@@ -3873,7 +4025,8 @@ function generate_reactor_statics()
     {
       if(molecule_psi_label[loop].position > 16)
       {
-        console_write("Error: label for output \u03c8 is too large for a standard label -- make a smaller label or choose large output \u03c8.");
+        // console_write("Error: label for output \u03c8 is too large for a standard label -- make a smaller label or choose large output \u03c8.");
+        error_write("label for output \u03c8 is too large for a standard label -- make a smaller label or choose large output \u03c8.");
         // ref.value = "";
         return "";
       }
@@ -4024,7 +4177,8 @@ function generate_preview_fn()
   scene_ref = document.getElementById("preview_scene_output");
   if((ini_ref == null) || (scene_ref == null))
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
@@ -4044,17 +4198,20 @@ function generate_preview_fn()
       // the usual paperwork
       if(!validate_grid(reactor_things_array[loop].location))
       {
-        console_write("Error: bad grid location");
+        // console_write("Error: bad grid location");
+        error_write("bad grid location");
         return;
       }
       if(!validate_color(reactor_things_array[loop].color))
       {
-        console_write("Error: bad color");
+        // console_write("Error: bad color");
+        error_write("bad color");
         return;
       }
       if(!validate_direction(reactor_things_array[loop].direction))
       {
-        console_write("Error: bad direction");
+        // console_write("Error: bad direction");
+        error_write("bad direction");
         return;
       }
 
@@ -4066,7 +4223,8 @@ function generate_preview_fn()
           (reactor_things_array[loop].atom > 113) ||
           (Math.round(reactor_things_array[loop].atom) != reactor_things_array[loop].atom))
         {
-          console_write("Error: bad atomic number");
+          // console_write("Error: bad atomic number");
+          error_write("bad atomic number");
           return;
         }
 
@@ -4131,7 +4289,8 @@ function atom_pov_abbrev(atomic_number)
   if((isNaN(atomic_number)) || (atomic_number < 1) || (atomic_number > 113) ||
     (Math.round(atomic_number) != atomic_number))
   {
-    console_write("Error: bad atomic number");
+    // console_write("Error: bad atomic number");
+    error_write("bad atomic number");
     return "";
   }
 
@@ -4152,7 +4311,8 @@ function grid_click_handler(who)
   ref = document.getElementById("input_grid_number");
   if(ref == null)
   {
-    console_write("Error: it\'s shy");
+    // console_write("Error: it\'s shy");
+    error_write("it\'s shy");
     return;
   }
 
@@ -4209,7 +4369,8 @@ function select_preview_ini_fn()
   ref = document.getElementById("preview_ini_output");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   ref.select();
@@ -4221,7 +4382,8 @@ function select_preview_scene_fn()
   ref = document.getElementById("preview_scene_output");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   ref.select();
@@ -4233,7 +4395,8 @@ function select_real_ini_fn()
   ref = document.getElementById("real_ini_output");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   ref.select();
@@ -4245,7 +4408,8 @@ function select_real_scene_fn()
   ref = document.getElementById("real_scene_output");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   ref.select();
@@ -4375,35 +4539,40 @@ function holy_crap_here_we_go()
   ini_ref = document.getElementById("real_ini_output");
   if(ini_ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
   scene_ref = document.getElementById("real_scene_output");
   if(scene_ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
 
   ref = document.getElementById("big_psi_select");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   if(ref.selectedIndex === 0) use_big_psi = false;
   else if(ref.selectedIndex === 1) use_big_psi = true;
   else
   {
-    console_write("Error: didn't expect that");
+    // console_write("Error: didn't expect that");
+    error_write("didn't expect that");
     return;
   }
 
   ref = document.getElementById("how_long_to_run");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   if(ref.selectedIndex === 0) limit_type = PSI_LIMIT;
@@ -4411,61 +4580,70 @@ function holy_crap_here_we_go()
   else if(ref.selectedIndex === 2) limit_type = CYCLE_LIMIT;
   else
   {
-    console_write("Error: unexpected value from \"how_long_to_run\" drop-down");
+    // console_write("Error: unexpected value from \"how_long_to_run\" drop-down");
+    error_write("unexpected value from \"how_long_to_run\" drop-down");
     return;
   }
 
   if((limit_type === OMEGA_LIMIT) && use_big_psi)
   {
-    console_write("Error: can't count output \u03c9 when only output is large \u03c8.  Select a different reaction limit or choose standard \u03c8 and \u03c9 outputs.");
+    // console_write("Error: can't count output \u03c9 when only output is large \u03c8.  Select a different reaction limit or choose standard \u03c8 and \u03c9 outputs.");
+    error_write("can't count output \u03c9 when only output is large \u03c8.  Select a different reaction limit or choose standard \u03c8 and \u03c9 outputs.");
     return;
   }
 
   ref = document.getElementById("input_reaction_limit");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   limit_count = Number(ref.value);
   if((isNaN(limit_count)) || (limit_count < 1) || (limit_count > 10000) ||
     (Math.round(limit_count) != limit_count))
   {
-    console_write("Error: bad value from \"input_reaction_limit\" input field");
+    // console_write("Error: bad value from \"input_reaction_limit\" input field");
+    error_write("bad value from \"input_reaction_limit\" input field");
     return;
   }
 
   ref = document.getElementById("input_reaction_extra_cycles");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   extra_cycles = Number(ref.value);
   if((isNaN(extra_cycles)) || (extra_cycles < 0) || (extra_cycles > 100) ||
     (Math.round(extra_cycles) != extra_cycles))
   {
-    console_write("Error: bad value from \"input_reaction_extra_cycles\" input field");
+    // console_write("Error: bad value from \"input_reaction_extra_cycles\" input field");
+    error_write("bad value from \"input_reaction_extra_cycles\" input field");
     return;
   }
 
   ref = document.getElementById("input_frames_per_cycle");
   if(ref == null)
   {
-    console_write("Error: bad id");
+    // console_write("Error: bad id");
+    error_write("bad id");
     return;
   }
   frames_per_cycle = Number(ref.value);
   if((isNaN(frames_per_cycle)) || (frames_per_cycle < 1) ||
     (Math.round(frames_per_cycle) != frames_per_cycle))
   {
-    console_write("Error: bad value from frames-per-cycle input field");
+    // console_write("Error: bad value from frames-per-cycle input field");
+    error_write("bad value from frames-per-cycle input field");
     return;
   }
 
   if(frames_per_cycle > 60)  // ... let's say
   {
-    console_write("Warning: " + frames_per_cycle + " frames per cycle seems like a lot.  Are you sure that's right?");
+    // console_write("Warning: " + frames_per_cycle + " frames per cycle seems like a lot.  Are you sure that's right?");
+    warning_write("" + frames_per_cycle + " frames per cycle seems like a lot.  Are you sure that's right?");
   }
 
   // red_waldo = new waldo();
@@ -4489,7 +4667,8 @@ function holy_crap_here_we_go()
       }
       else
       {
-        console_write("Error: welp");
+        // console_write("Error: welp");
+        error_write("welp");
         return;
       }
     }
@@ -4501,7 +4680,8 @@ function holy_crap_here_we_go()
   if((!validate_grid(the_waldos[0].position)) ||
     (!validate_grid(the_waldos[1].position)))
   {
-    console_write("Error during reaction initialization");
+    // console_write("Error during reaction initialization");
+    error_write("Error during reaction initialization");
     return;
   }
 
@@ -4510,12 +4690,14 @@ function holy_crap_here_we_go()
   {
     if(!validate_grid(bonder_spots[loop]))
     {
-      console_write("Error: bonder out of bounds... probably my fault, sorry");
+      // console_write("Error: bonder out of bounds... probably my fault, sorry");
+      error_write("bonder out of bounds... probably my fault, sorry");
       return;
     }
     if(claimed.indexOf(bonder_spots[loop]) != -1)
     {
-      console_write("Error: two bonders on the same spot somehow... probably my fault, sorry");
+      // console_write("Error: two bonders on the same spot somehow... probably my fault, sorry");
+      error_write("two bonders on the same spot somehow... probably my fault, sorry");
       return;
     }
     claimed.push(bonder_spots[loop]);
@@ -4525,12 +4707,14 @@ function holy_crap_here_we_go()
   {
     if(!validate_grid(sensor_spot))
     {
-      console_write("Error: invalid sensor position... probably my fault, sorry");
+      // console_write("Error: invalid sensor position... probably my fault, sorry");
+      error_write("invalid sensor position... probably my fault, sorry");
       return;
     }
     if(claimed.indexOf(sensor_spot) != -1)
     {
-      console_write("Error: sensor and a bonder on the same position somehow... probably my fault, sorry");
+      // console_write("Error: sensor and a bonder on the same position somehow... probably my fault, sorry");
+      error_write("sensor and a bonder on the same position somehow... probably my fault, sorry");
       return;
     }
     claimed.push(sensor_spot);
@@ -4540,23 +4724,27 @@ function holy_crap_here_we_go()
   {
     if(!(validate_grid(fuse_left) && validate_grid(fuse_right)))
     {
-      console_write("Error: fusion target out of bounds somehow... probably my fault, sorry");
+      // console_write("Error: fusion target out of bounds somehow... probably my fault, sorry");
+      error_write("fusion target out of bounds somehow... probably my fault, sorry");
       return;
     }
     if(move_right(fuse_left) != fuse_right)
     {
-      console_write("Error: broken fusion target... probably my fault, sorry");
+      // console_write("Error: broken fusion target... probably my fault, sorry");
+      error_write("broken fusion target... probably my fault, sorry");
       return;
     }
     if(claimed.indexOf(fuse_left) != -1)
     {
-      console_write("Error: fusion target overlaps something somehow... probably my fault, sorry");
+      // console_write("Error: fusion target overlaps something somehow... probably my fault, sorry");
+      error_write("fusion target overlaps something somehow... probably my fault, sorry");
       return;
     }
     claimed.push(fuse_left);
     if(claimed.indexOf(fuse_right) != -1)
     {
-      console_write("Error: fusion target overlaps something somehow... probably my fault, sorry");
+      // console_write("Error: fusion target overlaps something somehow... probably my fault, sorry");
+      error_write("fusion target overlaps something somehow... probably my fault, sorry");
       return;
     }
     claimed.push(fuse_right);
@@ -4566,23 +4754,27 @@ function holy_crap_here_we_go()
   {
     if(!(validate_grid(fiss_left) && validate_grid(fiss_right)))
     {
-      console_write("Error: fission target out of bounds somehow... probably my fault, sorry");
+      // console_write("Error: fission target out of bounds somehow... probably my fault, sorry");
+      error_write("fission target out of bounds somehow... probably my fault, sorry");
       return;
     }
     if(move_right(fiss_left) != fiss_right)
     {
-      console_write("Error: broken fission target... probably my fault, sorry");
+      // console_write("Error: broken fission target... probably my fault, sorry");
+      error_write("broken fission target... probably my fault, sorry");
       return;
     }
     if(claimed.indexOf(fiss_left) != -1)
     {
-      console_write("Error: fisson target overlaps something somehow... probably my fault, sorry");
+      // console_write("Error: fisson target overlaps something somehow... probably my fault, sorry");
+      error_write("fisson target overlaps something somehow... probably my fault, sorry");
       return;
     }
     claimed.push(fiss_left);
     if(claimed.indexOf(fiss_right) != -1)
     {
-      console_write("Error: fission target overlaps something somehow... probably my fault, sorry");
+      // console_write("Error: fission target overlaps something somehow... probably my fault, sorry");
+      error_write("fission target overlaps something somehow... probably my fault, sorry");
       return;
     }
     claimed.push(fiss_right)
@@ -4595,21 +4787,25 @@ function holy_crap_here_we_go()
       if((validate_grid(tunnel_one) && (tunnel_other === 0)) ||
         (validate_grid(tunnel_other) && (tunnel_one === 0)))
       {
-        console_write("Error: only one quantum tunnel placed; solution must have 0 or 2.");
+        // console_write("Error: only one quantum tunnel placed; solution must have 0 or 2.");
+        error_write("only one quantum tunnel placed; solution must have 0 or 2.");
         return;
       }
-      console_write("Error: quantum tunnel out of bounds somehow... probably my fault, sorry");
+      // console_write("Error: quantum tunnel out of bounds somehow... probably my fault, sorry");
+      error_write("quantum tunnel out of bounds somehow... probably my fault, sorry");
       return;
     }
     if(claimed.indexOf(tunnel_one) != -1)
     {
-      console_write("Error: quantum tunnel overlaps something somehow... probably my fault, sorry");
+      // console_write("Error: quantum tunnel overlaps something somehow... probably my fault, sorry");
+      error_write("quantum tunnel overlaps something somehow... probably my fault, sorry");
       return;
     }
     claimed.push(tunnel_one);
     if(claimed.indexOf(tunnel_other) != -1)
     {
-      console_write("Error: quantum tunnel overlaps something somehow... probably my fault, sorry");
+      // console_write("Error: quantum tunnel overlaps something somehow... probably my fault, sorry");
+      error_write("quantum tunnel overlaps something somehow... probably my fault, sorry");
       return;
     }
   }
@@ -4619,17 +4815,20 @@ function holy_crap_here_we_go()
   {
     if(!validate_grid(reactor_things_array[loop].location))
     {
-      console_write("Error: instruction out of bounds... probably my fault, sorry");
+      // console_write("Error: instruction out of bounds... probably my fault, sorry");
+      error_write("instruction out of bounds... probably my fault, sorry");
       return;
     }
     if(!validate_color(reactor_things_array[loop].color))
     {
-      console_write("Error: bad color... probably my fault, sorry");
+      // console_write("Error: bad color... probably my fault, sorry");
+      error_write("bad color... probably my fault, sorry");
       return;
     }
     if(controls.indexOf(reactor_things_array[loop].object_type) < 0)
     {
-      console_write("Error: unknown object type... probably my fault, sorry");
+      // console_write("Error: unknown object type... probably my fault, sorry");
+      error_write("unknown object type... probably my fault, sorry");
       return;
     }
     if((reactor_things_array[loop].object_type === WALDO_DIR_STR) ||
@@ -4638,7 +4837,8 @@ function holy_crap_here_we_go()
     {
       if(!validate_direction(reactor_things_array[loop].direction))
       {
-        console_write("Error: bad direction... probably my fault, sorry");
+        // console_write("Error: bad direction... probably my fault, sorry");
+        error_write("bad direction... probably my fault, sorry");
         return;
       }
       if(reactor_things_array[loop].object_type === SENS_REDIR_STR)
@@ -4648,7 +4848,8 @@ function holy_crap_here_we_go()
           (reactor_things_array[loop].atom > 113) ||
           (Math.round(reactor_things_array[loop].atom) != reactor_things_array[loop].atom))
         {
-          console_write("Error: bad atomic number... probably my fault, sorry");
+          // console_write("Error: bad atomic number... probably my fault, sorry");
+          error_write("bad atomic number... probably my fault, sorry");
           return;
         }
       }
@@ -4664,7 +4865,8 @@ function holy_crap_here_we_go()
     {
       if(claimed.indexOf(reactor_things_array[loop].location) != -1)
       {
-        console_write("Error: two red directions overlap... probably my fault, sorry");
+        // console_write("Error: two red directions overlap... probably my fault, sorry");
+        error_write("two red directions overlap... probably my fault, sorry");
         return;
       }
       claimed.push(reactor_things_array[loop].location);
@@ -4679,7 +4881,8 @@ function holy_crap_here_we_go()
     {
       if(claimed.indexOf(reactor_things_array[loop].location) != -1)
       {
-        console_write("Error: two blue directions overlap... probably my fault, sorry");
+        // console_write("Error: two blue directions overlap... probably my fault, sorry");
+        error_write("two blue directions overlap... probably my fault, sorry");
         return;
       }
       claimed.push(reactor_things_array[loop].location);
@@ -4695,7 +4898,8 @@ function holy_crap_here_we_go()
     {
       if(claimed.indexOf(reactor_things_array[loop].location) != -1)
       {
-        console_write("Error: two red instructions overlap... probably my fault, sorry");
+        // console_write("Error: two red instructions overlap... probably my fault, sorry");
+        error_write("two red instructions overlap... probably my fault, sorry");
         return;
       }
       claimed.push(reactor_things_array[loop].location);
@@ -4710,7 +4914,8 @@ function holy_crap_here_we_go()
     {
       if(claimed.indexOf(reactor_things_array[loop].location) != -1)
       {
-        console_write("Error: two blue instructions overlap... probably my fault, sorry");
+        // console_write("Error: two blue instructions overlap... probably my fault, sorry");
+        error_write("two blue instructions overlap... probably my fault, sorry");
         return;
       }
       claimed.push(reactor_things_array[loop].location);
@@ -4778,7 +4983,8 @@ function holy_crap_here_we_go()
       {
         if(check_grid[moreloop].position === check_grid[yetmoreloop].position)
         {
-          console_write("Error: atom overlap in an input molecule... probably my fault, sorry");
+          // console_write("Error: atom overlap in an input molecule... probably my fault, sorry");
+          error_write("atom overlap in an input molecule... probably my fault, sorry");
           return;
         }
       }
@@ -4787,7 +4993,8 @@ function holy_crap_here_we_go()
 
   if(!(at_least_one_alpha || at_least_one_beta))
   {
-    console_write("Error: no input molecules");
+    // console_write("Error: no input molecules");
+    error_write("no input molecules");
     return;
   }
 
@@ -4797,7 +5004,8 @@ function holy_crap_here_we_go()
       (alpha_sequence_array[loop] != "A2") &&
       (alpha_sequence_array[loop] != "A3"))
     {
-      console_write("Error: alpha sequence problem");
+      // console_write("Error: alpha sequence problem");
+      error_write("alpha sequence problem");
       return;
     }
   }
@@ -4808,7 +5016,8 @@ function holy_crap_here_we_go()
       (beta_sequence_array[loop] != "B2") &&
       (beta_sequence_array[loop] != "B3"))
     {
-      console_write("Error: beta sequence problem");
+      // console_write("Error: beta sequence problem");
+      error_write("beta sequence problem");
       return;
     }
   }
@@ -4853,7 +5062,8 @@ function holy_crap_here_we_go()
     // so let's see if we should break
     if(current_cycle > hard_cycle_limit)
     {
-      console_write("Warning: cycle limit reached.  Make sure your waldo programs are set correctly.");
+      // console_write("Warning: cycle limit reached.  Make sure your waldo programs are set correctly.");
+      warning_write("Cycle limit reached.  Make sure your waldo programs are set correctly.");
       break;
     }
     if(limit_type === PSI_LIMIT)
@@ -4878,7 +5088,8 @@ function holy_crap_here_we_go()
     }
     else
     {
-      console_write("Error: now how the heck did that happen?");
+      // console_write("Error: now how the heck did that happen?");
+      error_write("now how the heck did that happen?");
       return;
     }
 
@@ -4893,7 +5104,8 @@ function holy_crap_here_we_go()
       if(!validate_grid(reactor_atoms[loop].next_position))
       {
         text = (error_text + text);
-        console_write("Warning: reaction ends in an error: atom goes out-of-bounds from position " + reactor_atoms[loop].position + " on cycle " + current_cycle + ".");
+        // console_write("Warning: reaction ends in an error: atom goes out-of-bounds from position " + reactor_atoms[loop].position + " on cycle " + current_cycle + ".");
+        warning_write("Reaction ends in an error: atom goes out-of-bounds from position " + reactor_atoms[loop].position + " on cycle " + current_cycle + ".");
         ultrabreak = true;
         break;
       }
@@ -4904,7 +5116,8 @@ function holy_crap_here_we_go()
         if(reactor_atoms[loop].next_position === reactor_atoms[moreloop].next_position)
         {
           text = (error_text + text);
-          console_write("Warning: reaction ends in an error: two atoms share position " + reactor_atoms[loop].next_position + " at the start of cycle " + (current_cycle + 1) + ".");
+          // console_write("Warning: reaction ends in an error: two atoms share position " + reactor_atoms[loop].next_position + " at the start of cycle " + (current_cycle + 1) + ".");
+          warning_write("Reaction ends in an error: two atoms share position " + reactor_atoms[loop].next_position + " at the start of cycle " + (current_cycle + 1) + ".");
           ultrabreak = true;
           break;
         }
@@ -4955,7 +5168,8 @@ function holy_crap_here_we_go()
       // and make sure they're in-bounds while we're here
       if(!validate_grid(the_waldos[waldo_loop].position))
       {
-        console_write("Error: waldo out of bounds... probably my fault, sorry");
+        // console_write("Error: waldo out of bounds... probably my fault, sorry");
+        error_write("waldo out of bounds... probably my fault, sorry");
         return;
       }
 
@@ -4965,12 +5179,14 @@ function holy_crap_here_we_go()
         // make sure it really has an atom
         if(find_atom_index(the_waldos[waldo_loop].position, false) < 0)
         {
-          console_write("Error: thought it did, but it didn\'t");
+          // console_write("Error: thought it did, but it didn\'t");
+          error_write("thought it did, but it didn\'t");
           return;
         }
         if(!propagate(the_waldos[waldo_loop].position, current_cycle, DS_NONE, 0))
         {
-          console_write("Error: propagation failure");
+          // console_write("Error: propagation failure");
+          error_write("propagation failure");
           return;
         }
       }
@@ -4983,7 +5199,8 @@ function holy_crap_here_we_go()
       else if(waldo_loop === 1) color_this_time = BLUE_STR;
       else
       {
-        console_write("Error: pretty sure there are only two waldo colors");
+        // console_write("Error: pretty sure there are only two waldo colors");
+        error_write("pretty sure there are only two waldo colors");
         return;
       }
 
@@ -5004,7 +5221,8 @@ function holy_crap_here_we_go()
       {
         if(!validate_direction(useful_thing))
         {
-          console_write("Error: aw heck!");
+          // console_write("Error: aw heck!");
+          error_write("aw heck!");
           return;
         }
         the_waldos[waldo_loop].direction = useful_thing;
@@ -5182,7 +5400,8 @@ function holy_crap_here_we_go()
                 if(reactor_atoms[one_atom].bond_right !=
                   reactor_atoms[other_atom].bond_left)
                 {
-                  console_write("Error: bond mismatch");
+                  // console_write("Error: bond mismatch");
+                  error_write("bond mismatch");
                   return;
                 }
                 if(reactor_things_array[useful_thing].object_type === BOND_PLUS_STR)
@@ -5209,7 +5428,8 @@ function holy_crap_here_we_go()
                 if(reactor_atoms[one_atom].bond_down !=
                   reactor_atoms[other_atom].bond_up)
                 {
-                  console_write("Error: bond mismatch");
+                  // console_write("Error: bond mismatch");
+                  error_write("bond mismatch");
                   return;
                 }
                 if(reactor_things_array[useful_thing].object_type === BOND_PLUS_STR)
@@ -5299,7 +5519,8 @@ function holy_crap_here_we_go()
             if(!propagate(the_waldos[waldo_loop].position,
               current_cycle, DS_UNKNOWN, 0))
             {
-              console_write("Error: propagation problem");
+              // console_write("Error: propagation problem");
+              error_write("propagation problem");
               return;
             }
           }
@@ -5315,7 +5536,8 @@ function holy_crap_here_we_go()
                 if(!propagate(the_waldos[waldo_loop].position,
                   current_cycle, DS_NONE, 0))
                 {
-                  console_write("Error: one of many possible propagation problems");
+                  // console_write("Error: one of many possible propagation problems");
+                  error_write("one of many possible propagation problems");
                   return;
                 }
               }
@@ -5336,7 +5558,8 @@ function holy_crap_here_we_go()
                 if(!propagate(the_waldos[waldo_loop].position,
                   current_cycle, DS_NONE, 0))
                 {
-                  console_write("Error: propagation gone wrong");
+                  // console_write("Error: propagation gone wrong");
+                  error_write("propagation gone wrong");
                   return;
                 }
               }
@@ -5350,14 +5573,16 @@ function holy_crap_here_we_go()
             more_useful = find_atom_index(the_waldos[waldo_loop].position, false);
             if(more_useful < 0)
             {
-              console_write("Error: Amazing!  Where did it go?");
+              // console_write("Error: Amazing!  Where did it go?");
+              error_write("Amazing!  Where did it go?");
               return;
             }
             the_waldos[waldo_loop].hold_atom = false;
             if(!propagate(the_waldos[waldo_loop].position,
               current_cycle, DS_UNKNOWN, 0))
             {
-              console_write("Error: propagation heck-up");
+              // console_write("Error: propagation heck-up");
+              error_write("propagation heck-up");
               return;
             }
           }
@@ -5425,7 +5650,8 @@ function holy_crap_here_we_go()
             {
               if(claimed.indexOf(check_grid[loop]) >= 0)
               {
-                console_write("Error: an atom collision I should have caught earlier");
+                // console_write("Error: an atom collision I should have caught earlier");
+                error_write("an atom collision I should have caught earlier");
                 return;
               }
               claimed.push(check_grid[loop]);
@@ -5556,12 +5782,14 @@ function holy_crap_here_we_go()
               // it's not on that grid, yet, but any valid position for an
               // input atom will be a valid grid position, too, and that does
               // all but one needed check
-              console_write("Error: bad atom position");
+              // console_write("Error: bad atom position");
+              error_write("bad atom position");
               return;
             }
             if(insert_molecule[loop].position >= check_grid.length)
             {
-              console_write("Error: bad atom position");
+              // console_write("Error: bad atom position");
+              error_write("bad atom position");
               return;
             }
             more_useful = check_grid[insert_molecule[loop].position];
@@ -5571,10 +5799,12 @@ function holy_crap_here_we_go()
               error_text = "// WARNING: This reaction ends in an error.\n";
               error_text += "// See console for details.\n\n";
               text = (error_text + text);
-              error_text = "Warning: reaction ends in the following error: ";
+              // error_text = "Warning: reaction ends in the following error: ";
+              error_text = "Reaction ends in the following error: ";
               error_text += "atom collision on input at position " + more_useful;
               error_text += " on cycle " + current_cycle;
-              console_write(error_text);
+              // console_write(error_text);
+              warning_write(error_text);
               ultrabreak = true;
               break;
             }
@@ -5699,7 +5929,8 @@ function holy_crap_here_we_go()
               }
               if(!propagate(check_grid[loop], current_cycle, DS_DEPARTCHECK, 0))
               {
-                console_write("Error: propagation problem");
+                // console_write("Error: propagation problem");
+                error_write("propagation problem");
                 return;
               }
               // we can borrow still_looking to be our success flag
@@ -5715,7 +5946,8 @@ function holy_crap_here_we_go()
                     if(!propagate(reactor_atoms[moreloop].position,
                       current_cycle, DS_DEPARTFAIL, 0))
                     {
-                      console_write("Error: propagation problem");
+                      // console_write("Error: propagation problem");
+                      error_write("propagation problem");
                       return;
                     }
                     still_looking = false;
@@ -5733,7 +5965,8 @@ function holy_crap_here_we_go()
                   if(!propagate(check_grid[loop], current_cycle,
                     DS_DEPARTBLOCK, 0))
                   {
-                    console_write("Error: propagation lamentation");
+                    // console_write("Error: propagation lamentation");
+                    error_write("propagation lamentation");
                     return;
                   }
                   the_waldos[waldo_loop].proceed = false;
@@ -5744,7 +5977,8 @@ function holy_crap_here_we_go()
                   if(!propagate(check_grid[loop], current_cycle,
                     DS_DEPARTCONFIRM, 0))
                   {
-                    console_write("Error: propagation frustration");
+                    // console_write("Error: propagation frustration");
+                    error_write("propagation frustration");
                     return;
                   }
                   check_progress = DS_DEPARTCONFIRM;
@@ -5845,7 +6079,8 @@ function holy_crap_here_we_go()
           if(!propagate(the_waldos[waldo_loop].position,
             current_cycle, more_useful, the_waldos[waldo_loop].position))
           {
-            console_write("Error: propagation lack of imagination");
+            // console_write("Error: propagation lack of imagination");
+            error_write("propagation lack of imagination");
             return;
           }
         }
@@ -5889,7 +6124,8 @@ function holy_crap_here_we_go()
               if(!propagate(the_waldos[loop].position, current_cycle,
                 DS_UNKNOWN, 0))
               {
-                console_write("Error: propagation problem");
+                // console_write("Error: propagation problem");
+                error_write("propagation problem");
                 return;
               }
             }
@@ -5900,7 +6136,8 @@ function holy_crap_here_we_go()
             more_useful = find_atom_index(move_left(fuse_left), false);
             if(more_useful < 0)
             {
-              console_write("Error: oh no!");
+              // console_write("Error: oh no!");
+              error_write("oh no!");
               return;
             }
             reactor_atoms[more_useful].bond_right = 0;
@@ -5910,7 +6147,8 @@ function holy_crap_here_we_go()
             more_useful = find_atom_index(move_right(fuse_left), false);
             if(more_useful < 0)
             {
-              console_write("Error: oh gosh!");
+              // console_write("Error: oh gosh!");
+              error_write("oh gosh!");
               return;
             }
             reactor_atoms[more_useful].bond_left = 0;
@@ -5920,7 +6158,8 @@ function holy_crap_here_we_go()
             more_useful = find_atom_index(move_up(fuse_left), false);
             if(more_useful < 0)
             {
-              console_write("Error: oh golly!");
+              // console_write("Error: oh golly!");
+              error_write("oh golly!");
               return;
             }
             reactor_atoms[more_useful].bond_down = 0;
@@ -5930,7 +6169,8 @@ function holy_crap_here_we_go()
             more_useful = find_atom_index(move_down(fuse_left), false);
             if(more_useful < 0)
             {
-              console_write("Error: well heck");
+              // console_write("Error: well heck");
+              error_write("well heck");
               return;
             }
             reactor_atoms[more_useful].bond_up = 0;
@@ -5963,7 +6203,8 @@ function holy_crap_here_we_go()
             }
             if(other_spot <= 0)
             {
-              console_write("Error: atomic brittleness");
+              // console_write("Error: atomic brittleness");
+              error_write("atomic brittleness");
               return;
             }
             if(one_spot === 0)
@@ -5972,12 +6213,14 @@ function holy_crap_here_we_go()
               more_useful = find_atom_index(move_up(fuse_right), false);
               if(more_useful < 0)
               {
-                console_write("Error: whoops");
+                // console_write("Error: whoops");
+                error_write("whoops");
                 return;
               }
               if(reactor_atoms[more_useful].bond_down <= 0)
               {
-                console_write("Error: bond miscount");
+                // console_write("Error: bond miscount");
+                error_write("bond miscount");
                 return;
               }
               --(reactor_atoms[more_useful].bond_down);
@@ -5988,12 +6231,14 @@ function holy_crap_here_we_go()
               more_useful = find_atom_index(move_right(fuse_right), false);
               if(more_useful < 0)
               {
-                console_write("Error: darn");
+                // console_write("Error: darn");
+                error_write("darn");
                 return;
               }
               if(reactor_atoms[more_useful].bond_left <= 0)
               {
-                console_write("Error: bond miscount");
+                // console_write("Error: bond miscount");
+                error_write("bond miscount");
                 return;
               }
               --(reactor_atoms[more_useful].bond_left);
@@ -6004,12 +6249,14 @@ function holy_crap_here_we_go()
               more_useful = find_atom_index(move_down(fuse_right), false);
               if(more_useful < 0)
               {
-                console_write("Error: shoot");
+                // console_write("Error: shoot");
+                error_write("shoot");
                 return;
               }
               if(reactor_atoms[more_useful].bond_up <= 0)
               {
-                console_write("Error: bond miscount");
+                // console_write("Error: bond miscount");
+                error_write("bond miscount");
                 return;
               }
               --(reactor_atoms[more_useful].bond_up);
@@ -6036,7 +6283,8 @@ function holy_crap_here_we_go()
                 if(!propagate(the_waldos[loop].position, current_cycle,
                   DS_NONE, 0))
                 {
-                  console_write("Error: propagation nah");
+                  // console_write("Error: propagation nah");
+                  error_write("propagation nah");
                   return;
                 }
               }
@@ -6083,11 +6331,13 @@ function holy_crap_here_we_go()
             error_text = "// WARNING: This reaction ends in an error.\n";
             error_text += "// See console for details.\n\n";
             text = (error_text + text);
-            error_text = "Warning: reaction ends in an error: ";
+            // error_text = "Warning: reaction ends in an error: ";
+            error_text = "Reaction ends in an error: ";
             error_text += "atom collision at position " + fiss_right;
             error_text += " on cycle " + current_cycle;
             error_text += " as the result of an atomic fission";
-            console_write(error_text);
+            // console_write(error_text);
+            warning_write(error_text);
             ultrabreak = true;
             break;
           }
@@ -6101,7 +6351,8 @@ function holy_crap_here_we_go()
               if(!propagate(the_waldos[loop].position, current_cycle,
                 DS_UNKNOWN, 0))
               {
-                console_write("Error: propagation meh");
+                // console_write("Error: propagation meh");
+                error_write("propagation meh");
                 return;
               }
             }
@@ -6140,7 +6391,8 @@ function holy_crap_here_we_go()
             }
             if(other_spot <= 0)
             {
-              console_write("Error: atom fallibility");
+              // console_write("Error: atom fallibility");
+              error_write("atom fallibility");
               return;
             }
             if(one_spot === 0)
@@ -6149,12 +6401,14 @@ function holy_crap_here_we_go()
               more_useful = find_atom_index(move_up(fiss_left), false);
               if(more_useful < 0)
               {
-                console_write("Error: it didn\'t work");
+                // console_write("Error: it didn\'t work");
+                error_write("it didn\'t work");
                 return;
               }
               if(reactor_atoms[more_useful].bond_down <= 0)
               {
-                console_write("Error: bond miscount");
+                // console_write("Error: bond miscount");
+                error_write("bond miscount");
                 return;
               }
               --(reactor_atoms[more_useful].bond_down);
@@ -6165,12 +6419,14 @@ function holy_crap_here_we_go()
               more_useful = find_atom_index(move_left(fiss_left), false);
               if(more_useful < 0)
               {
-                console_write("Error: no good hats left");
+                // console_write("Error: no good hats left");
+                error_write("no good hats left");
                 return;
               }
               if(reactor_atoms[more_useful].bond_right <= 0)
               {
-                console_write("Error: bond miscount");
+                // console_write("Error: bond miscount");
+                error_write("bond miscount");
                 return;
               }
               --(reactor_atoms[more_useful].bond_right);
@@ -6181,12 +6437,14 @@ function holy_crap_here_we_go()
               more_useful = find_atom_index(move_down(fiss_left), false);
               if(more_useful < 0)
               {
-                console_write("Error: missing an atom");
+                // console_write("Error: missing an atom");
+                error_write("missing an atom");
                 return;
               }
               if(reactor_atoms[more_useful].bond_up <= 0)
               {
-                console_write("Error: bond miscount");
+                // console_write("Error: bond miscount");
+                error_write("bond miscount");
                 return;
               }
               --(reactor_atoms[more_useful].bond_up);
@@ -6204,7 +6462,8 @@ function holy_crap_here_we_go()
               if(!propagate(the_waldos[loop].position, current_cycle,
                 DS_NONE, 0))
               {
-                console_write("Error: propagation discombobulation");
+                // console_write("Error: propagation discombobulation");
+                error_write("propagation discombobulation");
                 return;
               }
             }
@@ -6249,7 +6508,8 @@ function holy_crap_here_we_go()
               if(!propagate(the_waldos[loop].position, current_cycle,
                 DS_UNKNOWN, 0))
               {
-                console_write("Error: propagation deforestation");
+                // console_write("Error: propagation deforestation");
+                error_write("propagation deforestation");
                 return;
               }
             }
@@ -6285,12 +6545,14 @@ function holy_crap_here_we_go()
                 other_atom = find_atom_index(move_up(one_spot), false);
                 if(other_atom < 0)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 if(reactor_atoms[other_atom].bond_down != reactor_atoms[one_atom].bond_up)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 reactor_atoms[one_atom].bond_up = 0;
@@ -6301,12 +6563,14 @@ function holy_crap_here_we_go()
                 other_atom = find_atom_index(move_down(one_spot), false);
                 if(other_atom < 0)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 if(reactor_atoms[other_atom].bond_up != reactor_atoms[one_atom].bond_down)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 reactor_atoms[one_atom].bond_down = 0;
@@ -6317,12 +6581,14 @@ function holy_crap_here_we_go()
                 other_atom = find_atom_index(move_left(one_spot), false);
                 if(other_atom < 0)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 if(reactor_atoms[other_atom].bond_right != reactor_atoms[one_atom].bond_left)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 reactor_atoms[one_atom].bond_left = 0;
@@ -6333,12 +6599,14 @@ function holy_crap_here_we_go()
                 other_atom = find_atom_index(move_right(one_spot), false);
                 if(other_atom < 0)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 if(reactor_atoms[other_atom].bond_left != reactor_atoms[one_atom].bond_right)
                 {
-                  console_write("Error: bond problem");
+                  // console_write("Error: bond problem");
+                  error_write("bond problem");
                   return;
                 }
                 reactor_atoms[one_atom].bond_right = 0;
@@ -6401,7 +6669,8 @@ function holy_crap_here_we_go()
               origin_to_position_translates[tunnel_other]);
             if((axis_horizontal === null) || (axis_vertical === null))
             {
-              console_write("Error: math problem");
+              // console_write("Error: math problem");
+              error_write("math problem");
               return;
             }
             sfx_text += "      box {<0, -0.2, -10>, <sqrt(((" + axis_horizontal;
@@ -6443,7 +6712,8 @@ function holy_crap_here_we_go()
                 if(!propagate(the_waldos[loop].position, current_cycle,
                   DS_NONE, 0))
                 {
-                  console_write("Error: propagation noncooperation");
+                  // console_write("Error: propagation noncooperation");
+                  error_write("propagation noncooperation");
                   return;
                 }
               }
@@ -6452,7 +6722,8 @@ function holy_crap_here_we_go()
         }
         else
         {
-          console_write("Error: that\'s not an instruction");
+          // console_write("Error: that\'s not an instruction");
+          error_write("that\'s not an instruction");
           return;
         }
       }  // end of instruction processing if(useful_thing >= 0)
@@ -6489,7 +6760,8 @@ function holy_crap_here_we_go()
       useful_thing = find_atom_index(the_waldos[waldo_loop].position, false);
       if(useful_thing < 0)
       {
-        console_write("Error: oh no, we\'ve lost an atom!");
+        // console_write("Error: oh no, we\'ve lost an atom!");
+        error_write("oh no, we\'ve lost an atom!");
         return;
       }
       if((reactor_atoms[useful_thing].whatcha_doin != WD_ROTCLOCKPRELIM) &&
@@ -6509,7 +6781,8 @@ function holy_crap_here_we_go()
       if(!propagate(the_waldos[waldo_loop].position, current_cycle,
         more_useful, the_waldos[waldo_loop].position))
       {
-        console_write("Error: propagation motivation");
+        // console_write("Error: propagation motivation");
+        error_write("propagation motivation");
         return;
       }
     }
@@ -6535,13 +6808,15 @@ function holy_crap_here_we_go()
         else if(the_waldos[waldo_loop].direction === RIGHT_STR) useful_thing = WD_MOVERIGHT;
         else
         {
-          console_write("Error: unexpected thing at the thing");
+          // console_write("Error: unexpected thing at the thing");
+          error_write("unexpected thing at the thing");
           return;
         }
         one_atom = find_atom_index(the_waldos[waldo_loop].position, false);
         if(one_atom < 0)
         {
-          console_write("Error: butterfingers");
+          // console_write("Error: butterfingers");
+          error_write("butterfingers");
           return;
         }
         // if that atom already has a different status, reaction error
@@ -6552,17 +6827,20 @@ function holy_crap_here_we_go()
           error_text = "// WARNING: This reaction ends in an error.\n";
           error_text += "// See console for details.\n\n";
           text = (error_text + text);
-          error_text = "Warning: reaction ends in an error: atom or molecule ";
+          // error_text = "Warning: reaction ends in an error: atom or molecule ";
+          error_text = "Reaction ends in an error: atom or molecule ";
           error_text += "pulled two different directions on cycle ";
           error_text += current_cycle;
-          console_write(error_text);
+          // console_write(error_text);
+          warning_write(error_text);
           break;
         }
         // now that that's out of the way, propagate that status
         if(!propagate(the_waldos[waldo_loop].position, current_cycle,
           useful_thing, 0))
         {
-          console_write("Error: propagation problem");
+          // console_write("Error: propagation problem");
+          error_write("propagation problem");
           return;
         }
       }
@@ -6572,7 +6850,8 @@ function holy_crap_here_we_go()
         one_atom = find_atom_index(the_waldos[waldo_loop].position, false);
         if(one_atom < 0)
         {
-          console_write("Error: misplaced an atom");
+          // console_write("Error: misplaced an atom");
+          error_write("misplaced an atom");
           return;
         }
         if(waldo_loop === 0) color_this_time = RED_STR;
@@ -6603,10 +6882,12 @@ function holy_crap_here_we_go()
             error_text = "// WARNING: This reaction ends in an error.\n";
             error_text += "// See console for details.\n\n";
             text = (error_text + text);
-            error_text = "Warning: reaction ends in an error: atom or molecule";
+            // error_text = "Warning: reaction ends in an error: atom or molecule";
+            error_text = "Reaction ends in an error: atom or molecule";
             error_text += " twisted apart by a rotation on cycle ";
             error_text += current_cycle;
-            console_write(error_text);
+            // console_write(error_text);
+            warning_write(error_text);
             break;
           }
         }
@@ -6621,9 +6902,11 @@ function holy_crap_here_we_go()
             error_text = "// WARNING: This reaction ends in an error.\n";
             error_text += "// See console for details.\n\n";
             text = (error_text + text);
-            error_text = "Warning: reaction ends in an error: atom or molecule";
+            // error_text = "Warning: reaction ends in an error: atom or molecule";
+            error_text = "Reaction ends in an error: atom or molecule";
             error_text += " pulled apart on cycle " + current_cycle;
-            console_write(error_text);
+            // console_write(error_text);
+            warning_write(error_text);
             break;
           }
           // ... and if it's WD_UNKNOWN, propagate WD_NOTHING
@@ -6632,7 +6915,8 @@ function holy_crap_here_we_go()
             if(!propagate(the_waldos[waldo_loop].position,
               current_cycle, WD_NOTHING, 0))
             {
-              console_write("Error: propagation defenestration");
+              // console_write("Error: propagation defenestration");
+              error_write("propagation defenestration");
               return;
             }
           }
@@ -6671,7 +6955,8 @@ function holy_crap_here_we_go()
       {
         if(!validate_grid(reactor_atoms[loop].axis_position))
         {
-          console_write("Error: invalid axis");
+          // console_write("Error: invalid axis");
+          error_write("invalid axis");
           return;
         }
         // start by figuring out how far vertically and horizontally it is
@@ -6685,7 +6970,8 @@ function holy_crap_here_we_go()
           axis_vertical, DOWN_STR), axis_horizontal, RIGHT_STR) !=
           reactor_atoms[loop].position)
         {
-          console_write("Error: basic arithmetic");
+          // console_write("Error: basic arithmetic");
+          error_write("basic arithmetic");
           return;
         }
         // figure out the new position
@@ -6710,7 +6996,8 @@ function holy_crap_here_we_go()
       }
       else
       {
-        console_write("Error: invalid intentions");
+        // console_write("Error: invalid intentions");
+        error_write("invalid intentions");
         return;
       }
     }
@@ -6767,7 +7054,8 @@ function holy_crap_here_we_go()
       {
         if(!validate_direction(the_waldos[loop].direction))
         {
-          console_write("Error: Really?  A bad direction all the way down here?");
+          // console_write("Error: Really?  A bad direction all the way down here?");
+          error_write("Really?  A bad direction all the way down here?");
           return;
         }
         provisional_text += " translate mod_clock * ";
@@ -6900,7 +7188,8 @@ function holy_crap_here_we_go()
         (Math.round(reactor_atoms[loop].atomic_number) !=
         reactor_atoms[loop].atomic_number))
       {
-        console_write("Error: bad atom way down here");
+        // console_write("Error: bad atom way down here");
+        error_write("bad atom way down here");
         return;
       }
       provisional_text += "union\n{\n";
@@ -6987,7 +7276,8 @@ function holy_crap_here_we_go()
           axis_vertical, DOWN_STR), axis_horizontal, RIGHT_STR) !=
           reactor_atoms[loop].position)
         {
-          console_write("Error: basic arithmetic, second semester");
+          // console_write("Error: basic arithmetic, second semester");
+          error_write("basic arithmetic, second semester");
           return;
         }
         // down the list... rotate the other way...
@@ -7019,7 +7309,8 @@ function holy_crap_here_we_go()
       }
       else
       {
-        console_write("Error: not sure what that one thinks it\'s doing");
+        // console_write("Error: not sure what that one thinks it\'s doing");
+        error_write("not sure what that one thinks it\'s doing");
         return;
       }
       provisional_text += "  translate ";
@@ -7072,7 +7363,8 @@ function holy_crap_here_we_go()
         }
         else
         {
-          console_write("Error: bad direction right here at the end");
+          // console_write("Error: bad direction right here at the end");
+          error_write("bad direction right here at the end");
           return;
         }
       }
@@ -7351,7 +7643,8 @@ function load_function()
 
   if(error_count != 0)
   {
-    console_write("Oh no!  Errors!");
+    // console_write("Oh no!  Errors!");
+    error_write("Oh no!  Errors!");
   }
   else
   {
@@ -7376,7 +7669,8 @@ function number_prettifier()
   input_ref = document.getElementById("input_grid_number");
   if(input_ref == null)
   {
-    console_write("Error: beautification resisted.");
+    // console_write("Error: beautification resisted.");
+    error_write("beautification resisted.");
     return;
   }
 
@@ -7417,10 +7711,12 @@ function number_prettifier()
     cell_ref = document.getElementById(string_thing);
     if(cell_ref == null)
     {
-      string_thing = "Error: prettiness resisted at cell ";
+      // string_thing = "Error: prettiness resisted at cell ";
+      string_thing = "prettiness resisted at cell ";
       string_thing += loop;
       string_thing += ".";
-      console_write(string_thing);
+      // console_write(string_thing);
+      error_write(string_thing);
       return;
     }
 
@@ -7435,16 +7731,90 @@ function number_prettifier()
   cell_ref = document.getElementById(string_thing);
   if(cell_ref == null)
   {
-    string_thing = "Error: prettiness resisted at current cell: ";
+    // string_thing = "Error: prettiness resisted at current cell: ";
+    string_thing = "prettiness resisted at current cell: ";
     string_thing += input_ref.value;
     string_thing += ".";
-    console_write(string_thing);
+    // console_write(string_thing);
+    error_write(string_thing);
     return;
   }
 
   cell_ref.style.color = "#FFFFFF";
   cell_ref.style.backgroundColor = "#000000";
 }
+
+
+// let's make warnings and errors more prominent
+function warning_write(shame)
+{
+  if(typeof(shame) !== typeof(""))
+  {
+    warning_write("warning_write() called with a bad parameter... my fault.");
+    return;
+  }
+
+  if(shame.length === 0)
+  {
+    warning_write("Unspecified reason... so, general anxiety.");
+    return;
+  }
+
+  // clear any warning or error timer about to go off...
+  clearTimeout(warning_error_timer_ref);
+
+  // change the background to an unsettling yellow
+  document.body.style.backgroundColor = "#FFFF00";
+
+  // set the timer to change it back
+  warning_error_timer_ref = setTimeout(reset_background, 400);
+
+  // and write the message
+  console_write("Warning: " + shame);
+}
+
+function error_write(shame)
+{
+  if(typeof(shame) !== typeof(""))
+  {
+    error_write("error_write() called with a bad parameter... my fault.");
+    return;
+  }
+
+  if(shame.length === 0)
+  {
+    error_write("Unspecified reason... so panicking is suggested.");
+    return;
+  }
+
+  // clear any warning or error timer about to go off...
+  clearTimeout(warning_error_timer_ref);
+
+  // change the background to an alarming red
+  document.body.style.backgroundColor = "#FF0000";
+
+  // set the timer to change it back
+  warning_error_timer_ref = setTimeout(reset_background, 400);
+
+  // and write the message
+  console_write("Error: " + shame);
+}
+
+function reset_background()
+{
+  document.body.style.backgroundColor = "#FFFFFF";
+}
+
+function warning_test()
+{
+  warning_write("Test warning; no action needed.");
+}
+
+function error_test()
+{
+  error_write("Test error; no action needed.");
+}
+
 
 </script>
 
@@ -7492,10 +7862,21 @@ To reset absolutely everything, reload this page.  On Firefox, you may need to d
 
 <hr>
 
-<p>
+<div>
 An output log of what's been happening.  Check back up here if something seems to go wrong:<br>
-<textarea id = "console_output" cols="80" rows="15" readonly></textarea>
-</p>
+<table border = "0" cellpadding = "0" cellspacing = "0"><tbody>
+  <tr>
+    <td style = "vertical-align:top">
+      <textarea id = "console_output" cols="80" rows="15" readonly></textarea>
+    </td>
+    <td style = "padding-left:10px;vertical-align:top;text-align:left">
+      The background will flash briefly on warnings and errors.  Try it now:<br>
+      <button onclick = "warning_test()">Test Warning</button><br>
+      <button onclick = "error_test()">Test Error</button>
+    </td>
+  </tr>
+</tbody></table>
+</div>
 
 <hr>
 
