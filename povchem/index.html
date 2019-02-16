@@ -7850,12 +7850,14 @@ function error_test()
 <body style = "background-color:#ffffff;color:#000000" onload = "load_function()">
 <div><h2>PovChem!</h2></div>
 
-<div><h3>Create Pov-Ray animations of your Spacechem solutions!</h3></div>
+<div><h3>Create POV-Ray animations of your Spacechem solutions!</h3></div>
 
 <div>
 Not quite automatically, though; you're going to have to enter your solution below.  And the interface is bad; I'll just prepare you for that now.<br><br>
 
-Anyway, To get a nice Pov-Ray animation of your Spacechem solution you'll enter it here and the page will run it through the same process it would get in the game... almost.  There are a few differences, mostly for simplicity's sake:<br>
+<span style = "font-size:small">(There's a small <a href = "#gallery">gallery</a> at the end of this page if you're just here to see what it can do.)</span><br><br>
+
+Anyway, To get a nice POV-Ray animation of your Spacechem solution you'll enter it here and the page will run it through the same process it would get in the game... almost.  There are a few differences, mostly for simplicity's sake:<br>
 <ul>
   <li>Some Spacechem solutions may not work here, namely some that depend on certain things happening in a certain order within the same cycle (i.e. bonder priority).</li>
   <li>Some solutions that work here may not work in Spacechem.  For instance, there's hardly any collision detection here.  Here you could animate atoms going through each other or rotating outside the reactor walls and the simulation wouldn't care as long as they all ended up back inside on unoccupied squares for the next cycle.</li>
@@ -7868,9 +7870,9 @@ To start, you will need the following:
 <ul>
   <li>Spacechem.  None of this makes any sense at all without that, does it?</li>
   <li><a href = "http://www.povray.org/" target = "_blank">The Persistence of Vision Ray Tracer</a></li>
-  <li>The "cyrvetic.ttf" truetype font.  I'm pretty sure it comes with Pov-Ray.</li>
-  <li>The "times.ttf" truetype font in some location that Pov-Ray checks.  Probably all of you already have this.  I sure hope it's the same one I have, because some letter positioning depends on it.</li>
-  <li><a href = "povchem.inc">This include file</a> (right-click, "save as").  When you get your scene file, below, it will need this.  Put it somewhere your scene files can find it.</li>
+  <li>The "cyrvetic.ttf" truetype font.  I'm pretty sure it comes with POV-Ray.</li>
+  <li>The "times.ttf" truetype font in some location that POV-Ray checks.  Probably all of you already have this.  I sure hope it's the same one I have, because some letter positioning depends on it.</li>
+  <li><a href = "povchem.inc">This include file</a> (right-click, "save as").  When you get your scene files, below, they will need this.  Put it somewhere your scene files can find it.</li>
   <li>Javascript.  All the neat stuff that this page does happens in javascript.  If you're the sort that disables all javascript on the pages you visit, well, I can't blame you, but this page will be useless to you unless you make an exception.</li>
   <li>Some video editing software and knowledge of how to use it.</li>
   <li>Patience.  You will likely wait a very long time while your animation renders.</li>
@@ -7882,10 +7884,11 @@ How to use this thing:
   <li>In section 1, replicate your solution's waldo programs and the placement of your reactor devices such as bonders, sensors, etc., on the reactor grid.  This is, admittedly, the worst of this interface, but perhaps it's best to get that over with quickly.</li>
   <li>In section 2, create molecules and assign them to input sequences and output labels.  (Technically, a single atom in a single molecule in a single input sequence is all that is needed to successfully create the bare minimum animated scene.)</li>
   <li>In section 3, generate and render a preview to make sure you've set everything as you expect, or set simulation and animation parameters and generate the full animated scene for your solution.</li>
+  <li>And now I hope you know how to use POV-Ray because that tutorial is well beyond the scope of this page.</li>
 </ol>
 And in all cases, if you press a button and nothing or something other than what you expect happens, scroll way back up to the output log for some possibly useful information.
 <br><br>
-Check the gallery at the end of this page for a walkthrough video.
+Check the <a href = "#gallery">gallery</a> at the end of this page for a walkthrough video.
 <br><br>
 To reset absolutely everything, reload this page.  On Firefox, you may need to do a hard refresh (Ctrl-F5).
 </div>
@@ -8930,7 +8933,7 @@ And your preview scene file (.pov) is here:<br>
 <button id = "select_preview_scene" onclick = "select_preview_scene_fn()">Select preview scene text</button>
 <br><br>
 
-Save them both somewhere, open the scene file in Pov-Ray, choose a resolution in the top-left, click the "Ini" button along the top, and choose that .ini file you just made.  Render it and compare the resulting image with what you expected to get.
+Save them both somewhere, open the scene file in POV-Ray, choose a resolution in the top-left, click the "Ini" button along the top, and choose that .ini file you just made.  Render it and compare the resulting image with what you expected to get.  (Don't forget <a href = "povchem.inc">the include file</a>!)
 <br><br>
 
 OR...<br><br>
@@ -8969,7 +8972,7 @@ And finally, here's your actual .ini file:<br>
 <textarea id = "real_scene_output" cols="80" rows="15" readonly></textarea>
 <button id = "select_real_scene" onclick = "select_real_scene_fn()">Select scene text</button><br><br>
 
-Save them both somewhere, open the scene file in Pov-Ray, click the "Ini" button along the top, and choose that .ini file you just made.  Select a resolution from the dropdown in the top-left, below the main toolbar, and then go find something else to do, because once you click "Render," your computer will be a bit busy.
+Save them both somewhere, open the scene file in POV-Ray, click the "Ini" button along the top, and choose that .ini file you just made.  Select a resolution from the dropdown in the top-left, below the main toolbar, and then go find something else to do, because once you click "Render," your computer will be a bit busy.
 <br><br>
 You may want to try the "<span style = "font-family:Monospace">[Anim (test render) 640x360]</span>" resolution first.  This will produce a small and ugly animation of your solution, but it will produce it very quickly.  This way you can verify that your solution worked correctly before you invest a lot of time rendering the real thing.
 <br><br>
@@ -8989,7 +8992,7 @@ Of course, if you want to start over later, change that line back to "<span styl
 
 <hr>
 
-<div>
+<div id = "gallery">
 <b>The Gallery</b>
 <br><br>
 <iframe width="640" height="360" src="https://www.youtube.com/embed/SUF3Po-9U48" frameborder="0" allowfullscreen></iframe><br>
