@@ -1420,6 +1420,25 @@ function grid_button_handler(which_button)
   var grid_ref;
   var new_thing;
   var so_what_was_there;
+  var other_ref;  // a ref for miscellaneous use
+
+  other_ref = document.getElementById("clear_confirm_div");
+  if(other_ref == null)
+  {
+    error_write("Aw c'mon I just wrote that.");
+    return;
+  }
+
+  if(which_button.id == "clear_grid_prelim_button")
+  {
+    other_ref.removeAttribute("hidden");
+    return;
+  }
+  else
+  {
+    other_ref.setAttribute("hidden", "");
+    if(which_button.id == "clear_grid_no") return;
+  }
 
   if(which_button.id == "clear_grid_button")
   {
@@ -4321,6 +4340,15 @@ function grid_click_handler(who)
 
   // this apparently doesn't trigger input or change events, so...
   number_prettifier();
+
+  // hide the grid clear confirmation in case it was left open
+  ref = document.getElementById("clear_confirm_div");
+  if(ref == null)
+  {
+    error_write("well hekkit.");
+    return;
+  }
+  ref.setAttribute("hidden", "");
 }
 
 
@@ -8641,14 +8669,22 @@ Add or change something on the grid:<br>
       <button id = "input_remove" onclick = "grid_button_handler(this)">Remove</button>
     </td>
     <td style = "vertical-align:top">
-      Clear the grid and start over:<br>
-      <button id = "clear_grid_button" onclick = "grid_button_handler(this)">Clear Grid</button>
+      <div>
+        Clear the grid and start over:<br>
+        <button id = "clear_grid_prelim_button" onclick = "grid_button_handler(this)">Clear Grid</button>
+      </div>
+      <div id = "clear_confirm_div">
+        <br>
+        Really clear the grid?<br>
+        <button style = "border-color:red" id = "clear_grid_button" onclick = "grid_button_handler(this)">YES</button> <button id = "clear_grid_no" onclick = "grid_button_handler(this)">No</button>
+      </div>
     </td>
   </tr>
 </tbody></table>
 <br><br>
 Some notes:
 <ul>
+  <li>Settings irrelevant to particular devices are ignored.  For instance, it does not matter how "Direction" is set when placing "Grab" controls.</li>
   <li>Fusion and fission targets take up two side-by-side grid spaces.  When placing a target, these controls refer to the left side of those devices.  As such, that left side cannot be placed in the rightmost column.</li>
   <li>There must be exactly 0 or 2 quantum tunnels in your solution.</li>
 </ul>
@@ -8855,17 +8891,20 @@ Now here's what you can do with that molecule:
 <br><br>
 Some more notes:<br>
 <ul>
-  <li>Each input can supply up to three molecule types.  These molecules will be shown as preview labels in the blank space beside the input areas.</li>
-  <li>Each output can display a single molecule as a preview label in the blank space beside the output area.</li>
   <li>Use only the upper white boxes unless you are creating a label for large output &#968;.  Any use of the lower gray boxes for anything other than large output &#968; will be rejected.</li>
+  <li>As in Spacechem, a molecule's position in the label matches the position it will arrive in the input region.</li>
+  <li>Each input can supply up to three molecule types.  These molecules will be shown as preview labels in the blank space beside the input areas.</li>
   <li>The input sequences describe the order in which the molecules assigned as A1-A3 and B1-B3 will arrive at their respective inputs.
     <ul>
       <li>If the end of an input sequence is reached, the sequence repeats from the beginning.</li>
       <li>If an input only sends in a single type of molecule, a single molecule type symbol is sufficient for the entire input sequence (i.e. all that would be needed for the input sequence could be just "A1").</li>
+      <li>Input sequences can be arbitrarily long.</li>
       <li>If Spacechem sends your in-game solution different molecules in random order, pay close attention to the ordering you end up getting and replicate it here.  (Or mix it up; a well-built solution should be able to handle that, right?)</li>
     </ul>
   </li>
+  <li>Each output can display a single molecule as a preview label in the blank space beside the output area.</li>
   <li>Output labels are not enforced.  Each output takes any molecule that fits when its output control is called.  Output labels are strictly for decoration and reminder of what the solution is supposed to be doing.</li>
+  <li>Creating a molecule in which an atom has more bonds than it can usually make will produce a warning, but is not strictly prohibited since such molecules do work in Spacechem.</li>
 </ul>
 </div>
 
