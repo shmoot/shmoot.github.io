@@ -1,5 +1,11 @@
 <!DOCTYPE html>
 
+<!--
+2019/02/18 It's well past when I should have started a changelog for this.
+This time I changed povchem.inc to work with a new font and added instructions
+for how to use that font to this page.
+-->
+
 <html>
 <head>
 
@@ -7871,7 +7877,11 @@ To start, you will need the following:
   <li>Spacechem.  None of this makes any sense at all without that, does it?</li>
   <li><a href = "http://www.povray.org/" target = "_blank">The Persistence of Vision Ray Tracer</a></li>
   <li>The "cyrvetic.ttf" truetype font.  I'm pretty sure it comes with POV-Ray.</li>
-  <li>The "times.ttf" truetype font in some location that POV-Ray checks.  Probably all of you already have this.  I sure hope it's the same one I have, because some letter positioning depends on it.</li>
+  <li>The "times.ttf" truetype font in some location that POV-Ray checks.  Probably all of you already have this.  I sure hope it's the same one I have, because some letter positioning depends on it.
+    <ul>
+      <li>See the <a href = "#font_troubleshooting">troubleshooting</a> section for an alternate font that can be used.</li>
+    </ul>
+  </li>
   <li><a href = "povchem.inc">This include file</a> (right-click, "save as").  When you get your scene files, below, they will need this.  Put it somewhere your scene files can find it.</li>
   <li>Javascript.  All the neat stuff that this page does happens in javascript.  If you're the sort that disables all javascript on the pages you visit, well, I can't blame you, but this page will be useless to you unless you make an exception.</li>
   <li>Some video editing software and knowledge of how to use it.</li>
@@ -8932,7 +8942,7 @@ And your preview scene file (.pov) is here:<br>
 <button id = "select_preview_scene" onclick = "select_preview_scene_fn()">Select preview scene text</button>
 <br><br>
 
-Save them both somewhere, open the scene file in POV-Ray, choose a resolution in the top-left, click the "Ini" button along the top, and choose that .ini file you just made.  Render it and compare the resulting image with what you expected to get.  (Don't forget <a href = "povchem.inc">the include file</a>!)
+Save them both somewhere, open the scene file in POV-Ray, choose a resolution in the top-left, click the "Ini" button along the top, and choose that .ini file you just made.  Render it and compare the resulting image with what you expected to get.  (Don't forget <a href = "povchem.inc" target = "_blank">the include file</a>!)
 <br><br>
 
 OR...<br><br>
@@ -8974,8 +8984,16 @@ And finally, here's your actual .ini file:<br>
 Save them both somewhere, open the scene file in POV-Ray, click the "Ini" button along the top, and choose that .ini file you just made.  Select a resolution from the dropdown in the top-left, below the main toolbar, and then go find something else to do, because once you click "Render," your computer will be a bit busy.
 <br><br>
 You may want to try the "<span style = "font-family:Monospace">[Anim (test render) 640x360]</span>" resolution first.  This will produce a small and ugly animation of your solution, but it will produce it very quickly.  This way you can verify that your solution worked correctly before you invest a lot of time rendering the real thing.
+</div>
+
+<hr>
+
+<div>
+<b>Troubleshooting</b>
 <br><br>
-<b>Troubleshooting tip:</b> POV-Ray may fail during long renders, perhaps a few thousand frames in.  This appears to be a problem with POV-Ray.  But all is not lost!  you can resume your render from the point it failed.  Here's how:
+
+<b>My long render failed halfway through</b><br>
+Yeah it might do that, perhaps a few thousand frames in.  This appears to be a problem with POV-Ray.  But all is not lost!  you can resume your render from the point it failed.  Here's how:
 <ol>
   <li>Go to the directory where POV-Ray put its output images.</li>
   <li>Find the last image it produced and note the number at the end of it.</li>
@@ -8987,6 +9005,21 @@ You may want to try the "<span style = "font-family:Monospace">[Anim (test rende
   <li>Repeat as (hopefully minimally) necessary.</li>
 </ol>
 Of course, if you want to start over later, change that line back to "<span style = "font-family:Monospace">Subset_Start_Frame=0</span>".
+<br><br>
+
+<span id = "font_troubleshooting"></span><b>POV-Ray can't find "times.ttf"</b> or <b>Several characters are badly misaligned</b><br>
+You may not have the Times New Roman font (times.ttf) or you may have a different version than I do.  Fortunately I have found a different suitable font from a free, reputable source:
+<ol>
+  <li>Go to <a href = "https://fonts.google.com" target = "_blank">Google Fonts</a> and find the font "<a href = "https://fonts.google.com/specimen/Noto+Serif" target = "_blank">Noto Serif</a>."</li>
+  <li>Click "Select this font" at the top-right.</li>
+  <li>Click the "1 Family Selected" tab that pops up at the bottom of the screen.</li>
+  <li>Download the font.  The download button is at the top-right of the box that expands from that tab.</li>
+  <li>Unpack that .zip file; read and decide whether to agree to the license terms, as you surely do for all licenses.</li>
+  <li>Assuming you agreed, copy the file "NotoSerif-Regular.ttf" to somewhere POV-Ray can find it, for instance to the same directory as the include or scene files.</li>
+  <li>Open the include file (povchem.inc) in your favorite text editor and find the line that reads "<span style = "font-family:Monospace">#declare use_Noto = 0;</span>"</li>
+  <li>Change that to "<span style = "font-family:Monospace">#declare use_Noto = 1;</span>" and save the file.
+</ol>
+Your render should now proceed correctly.  Or at least it should no longer have that problem.
 </div>
 
 <hr>

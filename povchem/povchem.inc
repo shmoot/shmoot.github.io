@@ -1,7 +1,18 @@
 // povchem.inc -- Pov-Ray include file for use with PovChem
 // by Shmoot, 2017
+//
+// Modified February, 2019, to support the "Noto Serif" font
 
 #version 3.5;
+
+#declare use_Noto = 0;
+
+#if (use_Noto != 1)
+  #declare font_string = "times.ttf"
+#else
+  #declare font_string = "NotoSerif-Regular.ttf"
+#end
+// and there's all kinds of subtle character positionings later, too
 
 global_settings
 {
@@ -221,7 +232,7 @@ union
 
 union
 {
-  text {ttf "times.ttf" letter_alpha 0.1 0 scale <2.5, 2.5, 1> translate <0.45, 0.65, 0>}
+  text {ttf font_string letter_alpha 0.1 0 scale <2.5, 2.5, 1> translate <0.45, 0.65, 0>}
   text {ttf "cyrvetic.ttf" "input" 0.1 0 scale <0.4, 0.4, 1> translate <0.6, 0.2, 0>}
   texture {label_texture}
   translate <-4, 1, grid_layer - 0.1>
@@ -238,7 +249,7 @@ union
 
 union
 {
-  text {ttf "times.ttf" letter_beta 0.1 0 scale <2, 2, 1> translate <0.6, 0.5, 0>}
+  text {ttf font_string letter_beta 0.1 0 scale <2, 2, 1> translate <0.6, 0.5, 0>}
   text {ttf "cyrvetic.ttf" "input" 0.1 0 scale <0.4, 0.4, 1> translate <0.85, 0.2, 0>}
   texture {label_texture}
   translate <-4, -3, grid_layer - 0.1>
@@ -256,7 +267,17 @@ union
   }
   union
   {
-    text {ttf "times.ttf" letter_psi 0.1 0 scale <2, 2, 1> translate <0.4, 1, 0>}
+
+#if (use_Noto != 1)
+    text {ttf font_string letter_psi 0.1 0 scale <2, 2, 1> translate <0.4, 1, 0>}
+#else
+    difference
+    {
+      text {ttf font_string letter_psi 0.1 0 scale <2, 2, 1> translate <0.275, 1, 0>}
+      plane {-y, -2.15}
+    }
+#end
+
     text {ttf "cyrvetic.ttf" "output" 0.1 0 scale <0.4, 0.4, 1> translate <0.45, 0.2, 0>}
     texture {label_texture}
     translate <2, 1, grid_layer - 0.1>
@@ -275,7 +296,17 @@ union
   }
   union
   {
-    text {ttf "times.ttf" letter_omega_small 0.1 0 scale <2.5, 2.5, 1> translate <0.27, 0.6, 0>}
+    text
+    {
+      ttf font_string letter_omega_small 0.1 0 scale <2.5, 2.5, 1>
+
+#if (use_Noto != 1)
+      translate <0.27, 0.6, 0>
+#else
+      translate <0.18, 0.6, 0>
+#end
+
+    }
     text {ttf "cyrvetic.ttf" "output" 0.1 0 scale <0.4, 0.4, 1> translate <0.45, 0.2, 0>}
     texture {label_texture}
     translate <2, -3, grid_layer - 0.1>
@@ -296,7 +327,17 @@ union
   }
   union
   {
-    text {ttf "times.ttf" letter_psi 0.1 0 scale <2, 2, 1> translate <0.4, 1, 0>}
+
+#if (use_Noto != 1)
+    text {ttf font_string letter_psi 0.1 0 scale <2, 2, 1> translate <0.4, 1, 0>}
+#else
+    difference
+    {
+      text {ttf font_string letter_psi 0.1 0 scale <2, 2, 1> translate <0.275, 1, 0>}
+      plane {-y, -2.15}
+    }
+#end
+
     text {ttf "cyrvetic.ttf" "output" 0.1 0 scale <0.4, 0.4, 1> translate <0.45, 0.2, 0>}
     texture {label_texture}
     translate <2, -1, grid_layer - 0.1>
@@ -3162,7 +3203,7 @@ difference
 
 // ??? Delta
 #declare Delta_base = sphere {0, atom_max_radius}
-#declare Delta_letter = text {ttf "times.ttf" letter_Delta 20 0 scale 0.8 translate <-0.5 + 0.255, -0.5 + 0.27, -5>}
+#declare Delta_letter = text {ttf font_string letter_Delta 20 0 scale 0.8 translate <-0.5 + 0.255, -0.5 + 0.27, -5>}
 #declare Delta_atom = union
 {
   difference
@@ -3200,7 +3241,17 @@ difference
 
 // ??? Theta
 #declare Theta_base = sphere {0, atom_max_radius}
-#declare Theta_letter = text {ttf "times.ttf" letter_Theta 20 0 scale 0.8 translate <-0.5 + 0.242, -0.5 + 0.24, -5>}
+#declare Theta_letter = text
+{
+  ttf font_string letter_Theta 20 0 scale 0.8
+  
+#if (use_Noto != 1)
+  translate <-0.5 + 0.242, -0.5 + 0.24, -5>
+#else
+  translate <-0.5 + 0.25, -0.5 + 0.22, -5>
+#end
+
+}
 #declare Theta_atom = union
 {
   difference
@@ -3238,7 +3289,17 @@ difference
 
 // ??? Sigma
 #declare Sigma_base = sphere {0, atom_max_radius}
-#declare Sigma_letter = text {ttf "times.ttf" letter_Sigma 20 0 scale 0.8 translate <-0.5 + 0.25, -0.5 + 0.22, -5>}
+#declare Sigma_letter = text
+{
+  ttf font_string letter_Sigma 20 0 scale 0.8
+
+#if (use_Noto != 1)
+  translate <-0.5 + 0.25, -0.5 + 0.22, -5>
+#else
+  translate <-0.5 + 0.275, -0.5 + 0.22, -5>
+#end
+
+}
 #declare Sigma_atom = union
 {
   difference
@@ -3276,7 +3337,17 @@ difference
 
 // ??? Omega
 #declare Omega_base = sphere {0, atom_max_radius}
-#declare Omega_letter = text {ttf "times.ttf" letter_Omega_large 20 0 scale 0.8 translate <-0.5 + 0.224, -0.5 + 0.22, -5>}
+#declare Omega_letter = text
+{
+  ttf font_string letter_Omega_large 20 0 scale 0.8
+
+#if (use_Noto != 1)
+  translate <-0.5 + 0.224, -0.5 + 0.22, -5>
+#else
+  translate <-0.5 + 0.232, -0.5 + 0.22, -5>
+#end
+
+}
 #declare Omega_atom = union
 {
   difference
@@ -3633,7 +3704,7 @@ difference
 #declare in_alpha_word_stick = union
 {
   text {ttf "cyrvetic.ttf" "IN" 10 0 scale <1, 1, 1> translate <-1 + 0.59, 0.1, -5>}
-  text {ttf "times.ttf" letter_alpha 10 0 scale <1.5, 1.5, 1> translate <-1 + 0.65, -1 + 0.25, -5>}
+  text {ttf font_string letter_alpha 10 0 scale <1.5, 1.5, 1> translate <-1 + 0.65, -1 + 0.25, -5>}
 }
 
 #declare red_in_alpha = union
@@ -3657,7 +3728,7 @@ difference
 #declare in_beta_word_stick = union
 {
   text {ttf "cyrvetic.ttf" "IN" 10 0 scale <1, 1, 1> translate <-1 + 0.59, 0.1, -5>}
-  text {ttf "times.ttf" letter_beta 10 0 scale <1.1, 1.1, 1> translate <-1 + 0.82, -1 + 0.3, -5>}
+  text {ttf font_string letter_beta 10 0 scale <1.1, 1.1, 1> translate <-1 + 0.82, -1 + 0.3, -5>}
 }
 
 #declare red_in_beta = union
@@ -3682,7 +3753,17 @@ difference
 #declare out_psi_word_stick = union
 {
   text {ttf "cyrvetic.ttf" "OUT" 10 0 scale <0.75, 0.75, 1> translate <-1 + 0.215, 0.1, -5>}
-  text {ttf "times.ttf" letter_psi 10 0 scale <1.3, 1.3, 1> translate <-1 + 0.612, -1 + 0.35, -5>}
+
+#if (use_Noto != 1)
+  text {ttf font_string letter_psi 10 0 scale <1.3, 1.3, 1> translate <-1 + 0.612, -1 + 0.35, -5>}
+#else
+  difference
+  {
+    text {ttf font_string letter_psi 10 0 scale <1.3, 1.3, 1> translate <-1 + 0.533, -1 + 0.35, -5>}
+    plane {-y, -0.07}
+  }
+#end
+
 }
 
 #declare red_out_psi = union
@@ -3706,7 +3787,17 @@ difference
 #declare out_omega_word_stick = union
 {
   text {ttf "cyrvetic.ttf" "OUT" 10 0 scale <0.75, 0.75, 1> translate <-1 + 0.215, 0.1, -5>}
-  text {ttf "times.ttf" letter_omega_small 10 0 scale <1.75, 1.75, 1> translate <-1 + 0.488, -1 + 0.15, -5>}
+  text
+  {
+    ttf font_string letter_omega_small 10 0 scale <1.75, 1.75, 1>
+
+#if (use_Noto != 1)
+    translate <-1 + 0.488, -1 + 0.15, -5>
+#else
+    translate <-1 + 0.42, -1 + 0.15, -5>
+#end
+
+  }
 }
 
 #declare red_out_omega = union
@@ -11018,7 +11109,7 @@ difference
 #declare alpha_flash_stick = merge
 {
   object {sfx_pad_stick translate <-5, 0, 0>}
-  text {ttf "times.ttf" letter_alpha 10 0 scale <2.5, 2.5, 1> translate <(0.45 - 4), 1.65, -5>}
+  text {ttf font_string letter_alpha 10 0 scale <2.5, 2.5, 1> translate <(0.45 - 4), 1.65, -5>}
   text {ttf "cyrvetic.ttf" "input" 10 0 scale <0.4, 0.4, 1> translate <(0.6 - 4), 1.2, -5>}
 }
 
@@ -11049,7 +11140,7 @@ difference
 #declare beta_flash_stick = merge
 {
   object {sfx_pad_stick translate <-5, -4, 0>}
-  text {ttf "times.ttf" letter_beta 10 0 scale <2, 2, 1> translate <(0.6 - 4), (0.5 - 3), -5>}
+  text {ttf font_string letter_beta 10 0 scale <2, 2, 1> translate <(0.6 - 4), (0.5 - 3), -5>}
   text {ttf "cyrvetic.ttf" "input" 10 0 scale <0.4, 0.4, 1> translate <(0.85 - 4), (0.2 - 3), -5>}
 }
 
@@ -11080,7 +11171,17 @@ difference
 #declare psi_flash_stick = merge
 {
   object {sfx_pad_stick translate <1, 0, 0>}
-  text {ttf "times.ttf" letter_psi 10 0 scale <2, 2, 1> translate <2.4, 2, -5>}
+
+#if (use_Noto != 1)
+  text {ttf font_string letter_psi 10 0 scale <2, 2, 1> translate <2.4, 2, -5>}
+#else
+  difference
+  {
+    text {ttf font_string letter_psi 10 0 scale <2, 2, 1> translate <2.4 + (0.275 - 0.4), 2, -5>}
+    plane {-y, -2.15 translate <0, 1, 0>}
+  }
+#end
+
   text {ttf "cyrvetic.ttf" "output" 10 0 scale <0.4, 0.4, 1> translate <2.45, 1.2, -5>}
 }
 
@@ -11111,7 +11212,17 @@ difference
 #declare omega_flash_stick = merge
 {
   object {sfx_pad_stick translate <1, -4, 0>}
-  text {ttf "times.ttf" letter_omega_small 10 0 scale <2.5, 2.5, 1> translate <2.27, (0.6 - 3), -5>}
+  text
+  {
+    ttf font_string letter_omega_small 10 0 scale <2.5, 2.5, 1>
+
+#if (use_Noto != 1)
+    translate <2.27, (0.6 - 3), -5>
+#else
+    translate <2.27 + (0.18 - 0.27), (0.6 - 3), -5>
+#end
+
+  }
   text {ttf "cyrvetic.ttf" "output" 10 0 scale <0.4, 0.4, 1> translate <2.45, (0.2 - 3), -5>}
 }
 
@@ -11143,7 +11254,30 @@ difference
 {
   object {sfx_pad_stick translate <1, 0, 0>}
   object {sfx_pad_stick translate <1, -4, 0>}
-  text {ttf "times.ttf" letter_psi 10 0 scale <2, 2, 1> translate <2.4, 0, -5>}
+  /*
+  text
+  {
+    ttf font_string letter_psi 10 0 scale <2, 2, 1>
+
+#if (use_Noto != 1)
+    translate <2.4, 0, -5>
+#else
+    translate <2.4 + (0.275 - 0.4), 0, -5>
+#end
+
+  }
+  */
+
+#if (use_Noto != 1)
+  text {ttf font_string letter_psi 10 0 scale <2, 2, 1> translate <2.4, 0, -5>}
+#else
+  difference
+  {
+    text {ttf font_string letter_psi 10 0 scale <2, 2, 1> translate <2.4 + (0.275 - 0.4), 0, -5>}
+    plane{-y, -2.15 translate <0, -1, 0>}
+  }
+#end
+
   text {ttf "cyrvetic.ttf" "output" 10 0 scale <0.4, 0.4, 1> translate <2.45, (0.2 - 1), -5>}
 }
 
