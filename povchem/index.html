@@ -4,6 +4,9 @@
 2019/02/18 It's well past when I should have started a changelog for this.
 This time I changed povchem.inc to work with a new font and added instructions
 for how to use that font to this page.
+
+2019/02/18 (2) Clarified some error messages and improved the input sequence
+interface.
 -->
 
 <html>
@@ -2776,7 +2779,8 @@ function add_fn(what)
       return;
     }
     alpha_sequence_array.push(useful_thing);
-    ref.value = alpha_sequence_array.toString();
+    // ref.value = alpha_sequence_array.toString();
+    alpha_sequence_redraw();
   }
   else
   {
@@ -2789,7 +2793,8 @@ function add_fn(what)
       return;
     }
     beta_sequence_array.push(useful_thing);
-    ref.value = beta_sequence_array.toString();
+    // ref.value = beta_sequence_array.toString();
+    beta_sequence_redraw();
   }
 }
 
@@ -5131,7 +5136,7 @@ function holy_crap_here_we_go()
     // cycle
     error_text = "// WARNING\n";
     error_text += "// This reaction ends in an error.\n";
-    error_text += "// See the console for details.\n\n";
+    error_text += "// See the output log at the top of the PovChem page for details.\n\n";
     for(loop = 0; loop < reactor_atoms.length; ++loop)
     {
       // make sure they're all in-bounds...
@@ -5831,7 +5836,7 @@ function holy_crap_here_we_go()
             {
               // reaction error -- atom collision
               error_text = "// WARNING: This reaction ends in an error.\n";
-              error_text += "// See console for details.\n\n";
+              error_text += "// See the output log at the top of the PovChem page for details.\n\n";
               text = (error_text + text);
               // error_text = "Warning: reaction ends in the following error: ";
               error_text = "Reaction ends in the following error: ";
@@ -6363,7 +6368,7 @@ function holy_crap_here_we_go()
           {
             // reaction error -- atom collision
             error_text = "// WARNING: This reaction ends in an error.\n";
-            error_text += "// See console for details.\n\n";
+            error_text += "// See the output log at the top of the PovChem page for details.\n\n";
             text = (error_text + text);
             // error_text = "Warning: reaction ends in an error: ";
             error_text = "Reaction ends in an error: ";
@@ -6859,7 +6864,7 @@ function holy_crap_here_we_go()
         {
           ultrabreak = true;
           error_text = "// WARNING: This reaction ends in an error.\n";
-          error_text += "// See console for details.\n\n";
+          error_text += "// See the output log at the top of the PovChem page for details.\n\n";
           text = (error_text + text);
           // error_text = "Warning: reaction ends in an error: atom or molecule ";
           error_text = "Reaction ends in an error: atom or molecule ";
@@ -6914,7 +6919,7 @@ function holy_crap_here_we_go()
             // reaction error
             ultrabreak = true;
             error_text = "// WARNING: This reaction ends in an error.\n";
-            error_text += "// See console for details.\n\n";
+            error_text += "// See the output log at the top of the PovChem page for details.\n\n";
             text = (error_text + text);
             // error_text = "Warning: reaction ends in an error: atom or molecule";
             error_text = "Reaction ends in an error: atom or molecule";
@@ -6934,7 +6939,7 @@ function holy_crap_here_we_go()
             // reaction error
             ultrabreak = true;
             error_text = "// WARNING: This reaction ends in an error.\n";
-            error_text += "// See console for details.\n\n";
+            error_text += "// See the output log at the top of the PovChem page for details.\n\n";
             text = (error_text + text);
             // error_text = "Warning: reaction ends in an error: atom or molecule";
             error_text = "Reaction ends in an error: atom or molecule";
@@ -7850,6 +7855,165 @@ function error_test()
 }
 
 
+// some functions to help make the input sequence interface better
+function alpha_sequence_redraw()
+{
+  var ref;
+  var loop;
+  var string_a_long;
+
+  ref = document.getElementById("alpha_sequence");
+  if(ref == null)
+  {
+    error_write("bad id in alpha_sequence_redraw()");
+    return;
+  }
+
+  string_a_long = "";
+  for(loop = 0; loop < alpha_sequence_array.length; ++loop)
+  {
+    if(loop > 0)
+    {
+      if(alpha_sequence_array[loop - 1] != alpha_sequence_array[loop])
+      {
+        string_a_long += "\n";
+      }
+      else
+      {
+        string_a_long += " ";
+      }
+    }
+    string_a_long += "(";
+    string_a_long += (loop + 1);
+    string_a_long += " ";
+    string_a_long += alpha_sequence_array[loop];
+    string_a_long += ")";
+  }
+  ref.value = string_a_long;
+}
+
+function beta_sequence_redraw()
+{
+  var ref;
+  var loop;
+  var string_a_long;
+
+  ref = document.getElementById("beta_sequence");
+  if(ref == null)
+  {
+    error_write("bad id in beta_sequence_redraw()");
+    return;
+  }
+
+  string_a_long = "";
+  for(loop = 0; loop < beta_sequence_array.length; ++loop)
+  {
+    if(loop > 0)
+    {
+      if(beta_sequence_array[loop - 1] != beta_sequence_array[loop])
+      {
+        string_a_long += "\n";
+      }
+      else
+      {
+        string_a_long += " ";
+      }
+    }
+    string_a_long += "(";
+    string_a_long += (loop + 1);
+    string_a_long += " ";
+    string_a_long += beta_sequence_array[loop];
+    string_a_long += ")";
+  }
+  ref.value = string_a_long;
+}
+
+function alpha_pop()
+{
+  if(alpha_sequence_array.length > 0)
+  {
+    --(alpha_sequence_array.length);
+    alpha_sequence_redraw();
+    // console_write("Removed a symbol from \u03b1 sequence.");
+  }
+}
+
+function beta_pop()
+{
+  if(beta_sequence_array.length > 0)
+  {
+    --(beta_sequence_array.length);
+    beta_sequence_redraw();
+    // console_write("Removed a symbol from \u03b2 sequence.");
+  }
+}
+
+function clear_alpha_seq_fn()
+{
+  alpha_sequence_array.length = 0;
+  alpha_sequence_redraw();
+  console_write("Cleared \u03b1 sequence.");
+}
+
+function clear_beta_seq_fn()
+{
+  beta_sequence_array.length = 0;
+  beta_sequence_redraw();
+  console_write("Cleared \u03b2 sequence.");
+}
+
+function clear_alpha_mol_fn()
+{
+  var one_ref;
+  var two_ref;
+  var three_ref;
+
+  one_ref = document.getElementById("a1_span");
+  two_ref = document.getElementById("a2_span");
+  three_ref = document.getElementById("a3_span");
+
+  if((one_ref == null) || (two_ref == null) ||
+    (three_ref == null))
+  {
+    // console_write("Error: bad id");
+    error_write("bad id");
+    return;
+  }
+  molecule_a1.length = 0;
+  molecule_a2.length = 0;
+  molecule_a3.length = 0;
+  one_ref.innerHTML = "";
+  two_ref.innerHTML = "";
+  three_ref.innerHTML = "";
+  console_write("Cleared \u03b1 molecules.");
+}
+
+function clear_beta_mol_fn()
+{
+  var one_ref;
+  var two_ref;
+  var three_ref;
+
+  one_ref = document.getElementById("b1_span");
+  two_ref = document.getElementById("b2_span");
+  three_ref = document.getElementById("b3_span");
+
+  if((one_ref == null) || (two_ref == null) ||
+    (three_ref == null))
+  {
+    // console_write("Error: bad id");
+    error_write("bad id");
+    return;
+  }
+  molecule_b1.length = 0;
+  molecule_b2.length = 0;
+  molecule_b3.length = 0;
+  one_ref.innerHTML = "";
+  two_ref.innerHTML = "";
+  three_ref.innerHTML = "";
+  console_write("Cleared \u03b2 molecules.");
+}
+
 </script>
 
 </head>
@@ -8687,7 +8851,7 @@ Add or change something on the grid:<br>
         Clear the grid and start over:<br>
         <button id = "clear_grid_prelim_button" onclick = "grid_button_handler(this)">Clear Grid</button>
       </div>
-      <div id = "clear_confirm_div">
+      <div id = "clear_confirm_div" hidden>
         <br>
         Really clear the grid?<br>
         <button style = "border-color:red" id = "clear_grid_button" onclick = "grid_button_handler(this)">YES</button> <button id = "clear_grid_no" onclick = "grid_button_handler(this)">No</button>
@@ -8878,8 +9042,12 @@ Now here's what you can do with that molecule:
       <button id = "add_a2" onclick = "add_fn(this)">Add an A2 to &#945; input sequence</button><br>
       <button id = "add_a3" onclick = "add_fn(this)">Add an A3 to &#945; input sequence</button><br><br>
       Current &#945; input sequence:<br>
-      <input type = "text" id = "alpha_sequence" readonly><br><br>
-      <button id = "clear_alpha" onclick = "clear_alpha_fn()">Clear &#945; sequence and molecules</button>
+      <textarea id = "alpha_sequence" readonly cols = "20" rows = "2"></textarea><br>
+      <button id = "alpha_backspace" onclick = "alpha_pop()">Remove last &#945; symbol</button>
+      <br><br>
+      <button id = "clear_alpha_sequence" onclick = "clear_alpha_seq_fn()">Clear &#945; sequence</button><br>
+      <button id = "clear_alpha_molecules" onclick = "clear_alpha_mol_fn()">Clear &#945; molecules</button>
+      <!-- <button id = "clear_alpha" onclick = "clear_alpha_fn()">Clear &#945; sequence and molecules</button> -->
     </td>
     <td style = "vertical-align:top">
       <button id = "set_b1" onclick = "set_b1_fn()">Set as molecule B1</button>&nbsp;<span id = "b1_span"></span><br>
@@ -8889,8 +9057,12 @@ Now here's what you can do with that molecule:
       <button id = "add_b2" onclick = "add_fn(this)">Add a B2 to &#946; input sequence</button><br>
       <button id = "add_b3" onclick = "add_fn(this)">Add a B3 to &#946; input sequence</button><br><br>
       Current &#946; input sequence:<br>
-      <input type = "text" id = "beta_sequence" readonly><br><br>
-      <button id = "clear_beta" onclick = "clear_beta_fn()">Clear &#946; sequence and molecules</button>
+      <textarea id = "beta_sequence" readonly cols = "20" rows = "2"></textarea><br>
+      <button id = "beta_backspace" onclick = "beta_pop()">Remove last &#946; symbol</button>
+      <br><br>
+      <button id = "clear_beta_sequence" onclick = "clear_beta_seq_fn()">Clear &#946; sequence</button><br>
+      <button id = "clear_beta_molecules" onclick = "clear_beta_mol_fn()">Clear &#946; molecules</button>
+      <!-- <button id = "clear_beta" onclick = "clear_beta_fn()">Clear &#946; sequence and molecules</button> -->
     </td>
     <td style = "vertical-align:top">
       <button id = "set_psi_label" onclick = "set_psi_label_fn()">Set as label for output &#968;</button><br>
