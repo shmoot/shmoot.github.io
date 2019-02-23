@@ -7,6 +7,10 @@ for how to use that font to this page.
 
 2019/02/18 (2) Clarified some error messages and improved the input sequence
 interface.
+
+2019/02/22 Brought bond removal behavior on nuclear reactions in line with
+in-game observations.  Also fixed a couple instances in this file where
+"times.ttf" was invoked regardless of the current font setting
 -->
 
 <html>
@@ -5074,11 +5078,13 @@ function holy_crap_here_we_go()
   // reaction statistics include some extra statics that aren't present in
   // the preview...
   text += "text {ttf \"cyrvetic.ttf\" \"Cycle:\" 0.1, 0 scale 0.3 translate <5.1, -3.4, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
-  text += "text {ttf \"times.ttf\" letter_psi 0.1, 0 scale 0.3 translate <5.1, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
+  // text += "text {ttf \"times.ttf\" letter_psi 0.1, 0 scale 0.3 translate <5.1, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
+  text += "text {ttf font_string letter_psi 0.1, 0 scale 0.3 translate <5.1, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
   text += "text {ttf \"cyrvetic.ttf\" \":\" 0.1, 0 scale 0.3 translate <5.31, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
   if(!use_big_psi)
   {
-    text += "text {ttf \"times.ttf\" letter_omega_small 0.1, 0 scale 0.3 translate <6, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
+    // text += "text {ttf \"times.ttf\" letter_omega_small 0.1, 0 scale 0.3 translate <6, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
+    text += "text {ttf font_string letter_omega_small 0.1, 0 scale 0.3 translate <6, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
     text += "text {ttf \"cyrvetic.ttf\" \":\" 0.1, 0 scale 0.3 translate <6.21, -3.75, label_grid_layer> texture {pigment {rgb 1} finish {ambient 1}} no_shadow}\n";
   }
 
@@ -6228,12 +6234,24 @@ function holy_crap_here_we_go()
             // one_spot will be the index (top, right, down) and other_spot
             // will be the bond strength at that orientation.  Remove bonds
             // so as to work toward a roughly even bond distribution.
-            one_spot = 0;
-            other_spot = reactor_atoms[other_atom].bond_up;
-            if(reactor_atoms[other_atom].bond_right > other_spot)
+
+            // That turns out to be mostly how the game itself does things, but
+            // it apparently removes in the order side, top, bottom once bonds
+            // are even strength; rather than top, side, bottom as I did.  Time
+            // to make those match.  So one_spot will still index top, right,
+            // down, respectively, but those bonds will be checked in a new
+            // order.
+            // one_spot = 0;
+            // other_spot = reactor_atoms[other_atom].bond_up;
+            one_spot = 1;
+            other_spot = reactor_atoms[other_atom].bond_right;
+            // if(reactor_atoms[other_atom].bond_right > other_spot)
+            if(reactor_atoms[other_atom].bond_up > other_spot)
             {
-              one_spot = 1;
-              other_spot = reactor_atoms[other_atom].bond_right;
+              // one_spot = 1;
+              // other_spot = reactor_atoms[other_atom].bond_right;
+              one_spot = 0;
+              other_spot = reactor_atoms[other_atom].bond_up;
             }
             if(reactor_atoms[other_atom].bond_down > other_spot)
             {
@@ -6416,12 +6434,21 @@ function holy_crap_here_we_go()
             // this time the index is top, left, down, and right is ignored
             // because if it were anything other than zero, the reaction
             // would have already hit an error
-            one_spot = 0;
-            other_spot = reactor_atoms[one_atom].bond_up;
-            if(reactor_atoms[one_atom].bond_left > other_spot)
+
+            // And I'm modifying the order in which they are checked here to
+            // side, top, bottom, too.
+
+            // one_spot = 0;
+            // other_spot = reactor_atoms[one_atom].bond_up;
+            one_spot = 1;
+            other_spot = reactor_atoms[one_atom].bond_left;
+            // if(reactor_atoms[one_atom].bond_left > other_spot)
+            if(reactor_atoms[one_atom].bond_up > other_spot)
             {
-              one_spot = 1;
-              other_spot = reactor_atoms[one_atom].bond_left;
+              // one_spot = 1;
+              // other_spot = reactor_atoms[one_atom].bond_left;
+              one_spot = 0;
+              other_spot = reactor_atoms[one_atom].bond_up;
             }
             if(reactor_atoms[one_atom].bond_down > other_spot)
             {
@@ -9146,12 +9173,12 @@ Be sure to check the log output back at the top of the page for any warnings or 
 And finally, here's your actual .ini file:<br>
 (Note: the actual .ini likely <b>will</b> be different each time, so be sure to save each new one.)<br>
 <textarea id = "real_ini_output" cols="80" rows="15" readonly></textarea>
-<button id = "select_real_ini" onclick = "select_real_ini_fn()">Select .ini text</button>
+<button id = "select_real_ini" onclick = "select_real_ini_fn()">Select animated .ini text</button>
 <br><br>
 
 ... and your actual scene file (.pov):<br>
 <textarea id = "real_scene_output" cols="80" rows="15" readonly></textarea>
-<button id = "select_real_scene" onclick = "select_real_scene_fn()">Select scene text</button><br><br>
+<button id = "select_real_scene" onclick = "select_real_scene_fn()">Select animated scene text</button><br><br>
 
 Save them both somewhere, open the scene file in POV-Ray, click the "Ini" button along the top, and choose that .ini file you just made.  Select a resolution from the dropdown in the top-left, below the main toolbar, and then go find something else to do, because once you click "Render," your computer will be a bit busy.
 <br><br>
