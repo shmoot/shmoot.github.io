@@ -1,0 +1,2794 @@
+<!DOCTYPE html> <!-- Firefox is getting picky with its red marks -->
+<html>
+
+<!--
+I should probably write down when I started this, before the OS metadata
+forgets due to copying all over the place, so...
+npnp.html - 'Nother Powerful Nifty Purchase
+started August 19, 2019
+
+-->
+
+<head>
+<meta charset = "UTF-8">
+<title>'Nother Powerful Nifty Purchase</title>
+
+<style>
+td
+{
+  padding-right: 10px;
+}
+td.headerific
+{
+  text-align: left;
+  vertical-align: bottom;
+}
+</style>
+
+<script>
+
+var SEARCH_FAST = 0;
+var SEARCH_FEW = 1;
+var SEARCH_HEAVY = 2;
+var SEARCH_PRI = 3;
+
+var search_mode = SEARCH_FAST;
+
+var RUN_NORMAL = 0;
+var RUN_HALT_SUCCESS = 1;
+var RUN_HALT_TIMEOUT = 2;
+var RUN_HALT_ERROR = 3;  // that's on me if so
+
+var run_state = RUN_NORMAL;
+
+
+function dollary_update()
+{
+  var ref;
+  var dollarysymbol;
+  var loop;
+
+  ref = document.getElementById("dollary_select");
+  if(ref == null) return;
+
+  if(ref.selectedIndex == 0)
+  {
+    dollarysymbol = "";
+  }
+  else
+  {
+    dollarysymbol = ref.value;
+  }
+
+  ref = document.getElementsByClassName("dollardingy");
+  for(loop = 0; loop < ref.length; ++loop)
+  {
+    ref[loop].innerHTML = dollarysymbol;
+  }
+}
+
+
+function search_mode_change()
+{
+  var ref;
+
+  ref = document.getElementById("search_mode_select");
+  if(ref == null) return;
+
+  if(ref.selectedIndex == SEARCH_FAST) search_mode = SEARCH_FAST;
+  else if(ref.selectedIndex == SEARCH_FEW) search_mode = SEARCH_FEW;
+  else if(ref.selectedIndex == SEARCH_HEAVY) search_mode = SEARCH_HEAVY;
+  else if(ref.selectedIndex == SEARCH_PRI) search_mode = SEARCH_PRI;
+  else return;
+
+  document.getElementById("weight_row").setAttribute("hidden", "");
+  document.getElementById("priority_row").setAttribute("hidden", "");
+  document.getElementById("priority_control_gizmo").setAttribute("hidden", "");
+
+  if(ref.selectedIndex == SEARCH_HEAVY)
+  {
+    document.getElementById("weight_row").removeAttribute("hidden");
+  }
+  else if(ref.selectedIndex == SEARCH_PRI)
+  {
+    document.getElementById("priority_row").removeAttribute("hidden");
+    document.getElementById("priority_control_gizmo").removeAttribute("hidden");
+  }
+
+  display_redraw();
+}
+
+
+// item entry object
+function item_entry()
+{
+  this.quantity = Number(0);
+  this.name = "";
+  this.value = Number(0);
+  this.weight = Number(0);
+  this.priority = Number(0);
+  this.enabled = true;
+  this.priority_collapse_index = Number(0);
+
+  // make a new copy of itself and return that
+  this.new_copy = function()
+  {
+    var copy_item = new item_entry();
+    copy_item.quantity = this.quantity;
+    copy_item.name = this.name;
+    copy_item.value = this.value;
+    copy_item.weight = this.weight;
+    copy_item.priority = this.priority;
+    copy_item.enabled = this.enabled;
+    copy_item.priority_collapse_index = this.priority_collapse_index;
+    return copy_item;
+  }
+}
+
+
+// container for a whole bunch of item_entry objects
+function collection_display_object()
+{
+  this.items = [];  // they all go here
+
+  this.new_copy = function()
+  {
+    var loop;
+    var new_thing = new collection_display_object();
+    for(loop = 0; loop < this.items.length; ++loop)
+    {
+      new_thing.items.push(this.items[loop].new_copy());
+    }
+    return new_thing;
+  }
+
+  // find an entry by name; returns index if present, -1 if not or error
+  this.find = function(name)
+  {
+    if(typeof(name) !== typeof("")) return -1;
+
+    var loop;  // doesn't need to be any more sophisticated for a display ver
+    for(loop = 0; loop < this.items.length; ++loop)
+    {
+      if(this.items[loop].name === name) return loop;
+    }
+    return -1;
+  }
+
+  // sort the array by item name -- called by a couple other functions here
+  this.sort_by_name = function()
+  {
+    this.items.sort(function(a, b)
+    {
+      if(a.name < b.name) return -1;
+      if(a.name > b.name) return 1;
+      if(a.name == b.name) return 0;
+      alert("heck in the sort comparison function");
+      return 0;
+    });
+  }
+
+  // that thing had better be an item_entry
+  this.insert = function(thing)
+  {
+    if(this.find(thing.name) !== -1) return;
+    this.items.push(thing.new_copy());
+    this.sort_by_name();
+  }
+
+  // modify the name of a given entry; re-sorts itself afterwards
+  this.modify_name = function(index, new_name)
+  {
+    if(typeof(index) !== typeof(Number(0))) return;
+    if(typeof(new_name) !== typeof("")) return;
+    if(Math.round(index) !== index) return;
+    if(index < 0) return;
+    if(index >= this.items.length) return;
+    this.items[index].name = new_name;
+    this.sort_by_name();
+  }
+}
+
+
+var display_container = new collection_display_object();
+
+
+function add_button()
+{
+  var insert_item = new item_entry();
+  var qty_ref = document.getElementById("quantity_input_new");
+  var name_ref = document.getElementById("name_input_new");
+  var value_ref = document.getElementById("value_input_new");
+  var weight_ref = document.getElementById("weight_input_new");
+  var priority_ref = document.getElementById("priority_input_new");
+
+  if((qty_ref == null) || (name_ref == null) || (value_ref == null) ||
+    (weight_ref == null) || (priority_ref == null)) return;
+
+  if(isNaN(qty_ref.value)) return;
+  if(Math.round(qty_ref.value) != qty_ref.value) return;
+  if(Number(qty_ref.value) < 1) return;
+
+  if(name_ref.value.length <= 0) return;
+  if(display_container.find(name_ref.value) !== -1)
+  {
+    document.getElementById("name_derp").style.backgroundColor = "red";
+    return;
+  }
+  document.getElementById("name_derp").style.backgroundColor = "initial";
+
+  if(isNaN(value_ref.value)) return;
+  if(Math.round(value_ref.value) != value_ref.value) return;
+  if(Number(value_ref.value) < 1) return;
+
+  if(isNaN(weight_ref.value)) weight_ref.value = 0;
+  if(Number(weight_ref.value) < 0) weight_ref.value = 0;
+
+  if(isNaN(priority_ref.value)) priority_ref.value = 1;
+  priority_ref.value = Math.round(priority_ref.value);
+  if(Number(priority_ref.value) < 1) priority_ref.value = 1;
+
+  insert_item.quantity = Number(qty_ref.value);
+  insert_item.name = name_ref.value;
+  insert_item.value = Number(value_ref.value);
+  insert_item.weight = Number(weight_ref.value);
+  insert_item.priority = Number(priority_ref.value);
+  insert_item.enabled = true;
+
+  name_ref.value = "";
+  display_container.insert(insert_item);
+  display_redraw();
+  qty_ref.focus();
+  qty_ref.select();
+}
+
+
+// better write that one then
+function display_redraw()
+{
+  var big_ref = document.getElementById("input_summary_tables");
+  var empty_ref = document.getElementById("nothing_span");
+  var loop;
+  var table_ref;
+  var row_ref;
+  var cell_ref;
+  var object_ref;
+  var text_ref;
+
+  var useful_string;
+
+  if(big_ref == null) return;
+  if(empty_ref == null) return;
+
+  // clear out anything there, the polite way
+  while(big_ref.hasChildNodes())
+  {
+    big_ref.removeChild(big_ref.childNodes[0]);
+  }
+
+  if(display_container.items.length == 0)
+  {
+    empty_ref.removeAttribute("hidden");
+    summary_redraw();
+    return;
+  }
+
+  empty_ref.setAttribute("hidden", "");
+
+  table_ref = document.createElement("table");
+  table_ref.style.borderCollapse = "collapse";
+
+  // create the header row
+  row_ref = document.createElement("tr");
+
+  // first cell empty -- header doesn't really need a remove button
+  cell_ref = document.createElement("td");
+  row_ref.appendChild(cell_ref);
+
+  // quantity
+  cell_ref = document.createElement("td");
+  cell_ref.setAttribute("class", "headerific");
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  text_ref = document.createTextNode("Quantity");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // name
+  cell_ref = document.createElement("td");
+  cell_ref.setAttribute("class", "headerific");
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  text_ref = document.createTextNode("Name");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // value
+  cell_ref = document.createElement("td");
+  cell_ref.setAttribute("class", "headerific");
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  text_ref = document.createTextNode("Value");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // heavy mode only: weight
+  if(search_mode === SEARCH_HEAVY)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.setAttribute("class", "headerific");
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "underline";
+    text_ref = document.createTextNode("Weight");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  // stack value
+  cell_ref = document.createElement("td");
+  cell_ref.setAttribute("class", "headerific");
+  text_ref = document.createTextNode("Stack");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("br");
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  text_ref = document.createTextNode("Value");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // heavy mode only again: stack weight and value per weight
+  if(search_mode === SEARCH_HEAVY)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.setAttribute("class", "headerific");
+    text_ref = document.createTextNode("Stack");
+    cell_ref.appendChild(text_ref);
+    object_ref = document.createElement("br");
+    cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "underline";
+    text_ref = document.createTextNode("Weight");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    cell_ref = document.createElement("td");
+    cell_ref.setAttribute("class", "headerific");
+    text_ref = document.createTextNode("Value/");
+    cell_ref.appendChild(text_ref);
+    object_ref = document.createElement("br");
+    cell_ref.appendChild(object_ref);
+    // text_ref = document.createTextNode("Per");
+    // cell_ref.appendChild(text_ref);
+    // object_ref = document.createElement("br");
+    // cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "underline";
+    text_ref = document.createTextNode("Weight");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  // Priority mode needs its column
+  else if(search_mode === SEARCH_PRI)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.setAttribute("class", "headerific");
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "underline";
+    text_ref = document.createTextNode("Priority");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  // enabled?
+  cell_ref = document.createElement("td");
+  cell_ref.setAttribute("class", "headerific");
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  object_ref.setAttribute("title", "Only enabled items will be considered for the search.");
+  text_ref = document.createTextNode("Enabled");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  table_ref.appendChild(row_ref);
+
+  // now a whole buncha paperwork, fortunately mostly in a loop
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    row_ref = document.createElement("tr");
+    if(!(display_container.items[loop].enabled))
+    {
+      row_ref.style.textDecoration = "line-through";
+      row_ref.style.backgroundColor = "#a0a0a0";
+    }
+
+    // the "remove" button
+    cell_ref = document.createElement("td");
+    object_ref = document.createElement("button");
+    useful_string = "remove_button(";
+    useful_string += loop;
+    useful_string += ")";
+    object_ref.setAttribute("onclick", useful_string);
+    text_ref = document.createTextNode("Remove");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    // quantity column
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    object_ref = document.createElement("input");
+    object_ref.style.textDecoration = "inherit";
+    object_ref.setAttribute("type", "number");
+    object_ref.setAttribute("min", "1");
+    object_ref.setAttribute("step", "1");
+    useful_string = "";
+    useful_string += display_container.items[loop].quantity;
+    object_ref.setAttribute("value", useful_string);
+    useful_string = "qty_change(";
+    useful_string += loop;
+    useful_string += ", this)";
+    object_ref.setAttribute("onchange", useful_string);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    // name column
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    object_ref = document.createElement("input");
+    object_ref.style.textDecoration = "inherit";
+    object_ref.setAttribute("type", "text");
+    object_ref.setAttribute("size", "40");
+    object_ref.setAttribute("value", display_container.items[loop].name);
+    useful_string = "name_change(";
+    useful_string += loop;
+    useful_string += ", this)";
+    object_ref.setAttribute("onchange", useful_string);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    // value column... I guess right-justify these even though $ is way on left
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "inherit";
+    object_ref.setAttribute("class", "dollardingy");
+    cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("input");
+    object_ref.style.textDecoration = "inherit";
+    object_ref.style.textAlign = "right";
+    object_ref.setAttribute("type", "number");
+    object_ref.setAttribute("min", "1");
+    object_ref.setAttribute("step", "1");
+    useful_string = "";
+    useful_string += display_container.items[loop].value;
+    object_ref.setAttribute("value", useful_string);
+    useful_string = "value_change(";
+    useful_string += loop;
+    useful_string += ", this)";
+    object_ref.setAttribute("onchange", useful_string);
+    useful_string = "";
+    useful_string += (loop + 1);
+    object_ref.setAttribute("tabindex", useful_string);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    // possible weight column
+    if(search_mode === SEARCH_HEAVY)
+    {
+      cell_ref = document.createElement("td");
+      cell_ref.style.textDecoration = "inherit";
+      object_ref = document.createElement("input");
+      object_ref.style.textDecoration = "inherit";
+      object_ref.style.textAlign = "right";
+      object_ref.setAttribute("type", "number");
+      object_ref.setAttribute("min", "0");
+      object_ref.setAttribute("step", "0.05");
+      useful_string = "";
+      useful_string += display_container.items[loop].weight;
+      object_ref.setAttribute("value", useful_string);
+      useful_string = "weight_change(";
+      useful_string += loop;
+      useful_string += ", this)";
+      object_ref.setAttribute("onchange", useful_string);
+      cell_ref.appendChild(object_ref);
+      row_ref.appendChild(cell_ref);
+    }
+
+    // stack value
+    cell_ref = document.createElement("td");
+    // if(display_container.items[loop].quantity > 1)
+    // {  // not conditional any more -- do it in all cases
+    cell_ref.style.textDecoration = "inherit";
+    cell_ref.style.textAlign = "right";
+    object_ref = document.createElement("span");
+    object_ref.setAttribute("class", "dollardingy");
+    cell_ref.appendChild(object_ref);
+    useful_string = "";
+    useful_string += (display_container.items[loop].quantity *
+      display_container.items[loop].value);
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    // }
+    row_ref.appendChild(cell_ref);
+
+    if(search_mode === SEARCH_HEAVY)
+    {
+      // stack weight
+      cell_ref = document.createElement("td");
+      // if(display_container.items[loop].quantity > 1)
+      // {
+      cell_ref.style.textDecoration = "inherit";
+      cell_ref.style.textAlign = "right";
+      useful_string = Number(display_container.items[loop].quantity *
+        display_container.items[loop].weight).toFixed(2);
+      text_ref = document.createTextNode(useful_string);
+      cell_ref.appendChild(text_ref);
+      // }
+      row_ref.appendChild(cell_ref);
+
+      // value per weight
+      cell_ref = document.createElement("td");
+      cell_ref.style.textDecoration = "inherit";
+      cell_ref.style.textAlign = "right";
+      if(display_container.items[loop].weight == 0)
+      {
+        useful_string = "n/a";
+      }
+      else
+      {
+        useful_string = Number(display_container.items[loop].value /
+          display_container.items[loop].weight).toFixed(2);
+      }
+      text_ref = document.createTextNode(useful_string);
+      cell_ref.appendChild(text_ref);
+      row_ref.appendChild(cell_ref);
+    }
+
+    // priority
+    else if(search_mode === SEARCH_PRI)
+    {
+      cell_ref = document.createElement("td");
+      cell_ref.style.textDecoration = "inherit";
+      object_ref = document.createElement("input");
+      object_ref.style.textDecoration = "inherit";
+      object_ref.style.textAlign = "right";
+      object_ref.setAttribute("type", "number");
+      object_ref.setAttribute("min", "1");
+      object_ref.setAttribute("step", "1");
+      useful_string = "";
+      useful_string += display_container.items[loop].priority;
+      object_ref.setAttribute("value", useful_string);
+      useful_string = "priority_change(";
+      useful_string += loop;
+      useful_string += ", this)";
+      object_ref.setAttribute("onchange", useful_string);
+      cell_ref.appendChild(object_ref);
+      row_ref.appendChild(cell_ref);
+    }
+
+    // enabled checkbox
+    cell_ref = document.createElement("td");
+    cell_ref.style.textAlign = "center";
+    object_ref = document.createElement("input");
+    object_ref.setAttribute("type", "checkbox");
+    object_ref.checked = display_container.items[loop].enabled;
+    useful_string = "enablebox(";
+    useful_string += loop;
+    useful_string += ", this)";
+    object_ref.setAttribute("onchange", useful_string);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    table_ref.appendChild(row_ref);
+  }
+
+  big_ref.appendChild(table_ref);
+
+  // now I need a summary... but first I need that priority control gizmo
+  // ok the priority control gizmo is in so here's this now
+  summary_redraw();
+
+  // put the correct currency symbol in all those placeholders
+  // dollary_update();
+  // summary_redraw() includes a dollary_update()
+}
+
+
+function index_validate(index)
+{
+  var numberdx;
+
+  if(isNaN(index)) return -1;
+  numberdx = Number(index);
+  if(Math.round(numberdx) !== numberdx) return -1;
+  if(numberdx < 0) return -1;
+  if(numberdx >= display_container.items.length) return -1;
+
+  return numberdx;
+}
+
+
+function remove_button(index)
+{
+  var numberdx = index_validate(index);
+  if(numberdx < 0) return;
+
+  display_container.items.splice(numberdx, 1);
+  display_redraw();
+}
+
+
+function qty_change(index, ref)
+{
+  var numberdx = index_validate(index);
+  if(numberdx < 0) return;
+
+  var numval;
+  if(isNaN(ref.value))
+  {
+    ref.value = display_container.items[numberdx].quantity;
+    return;
+  }
+  numval = Number(ref.value);
+  if((Math.round(numval) !== numval) || (numval < 1))
+  {
+    ref.value = display_container.items[numberdx].quantity;
+    return;
+  }
+
+  display_container.items[numberdx].quantity = numval;
+  display_redraw();
+}
+
+
+function name_change(index, ref)
+{
+  var numberdx = index_validate(index);
+  if(numberdx < 0) return;
+
+  document.getElementById("name_derp").style.backgroundColor = "initial";
+
+  // if name entered was the same name it already had, just return
+  if(ref.value == display_container.items[numberdx].name) return;
+
+  // if it's the same name name as something already in there, complain, reset
+  // the input to the stored name, and return
+  if(display_container.find(ref.value) != -1)
+  {
+    document.getElementById("name_derp").style.backgroundColor = "red";
+    ref.value = display_container.items[numberdx].name;
+    return;
+  }
+
+  // I guess we're good... remember to sort on the way out
+  display_container.items[numberdx].name = ref.value;
+  display_container.sort_by_name();
+  display_redraw();
+}
+
+
+function value_change(index, ref)
+{
+  var ndx = index_validate(index);
+  if(ndx < 0) return;
+
+  if(isNaN(ref.value))
+  {
+    ref.value = display_container.items[ndx].value;
+    return;
+  }
+  var numval = Number(ref.value);
+  if((Math.round(numval) !== numval) || (numval < 1))
+  {
+    ref.value = display_container.items[ndx].value;
+    return;
+  }
+
+  display_container.items[ndx].value = numval;
+  // display_redraw();  // can't do that much... try just the row
+  row_redraw(ndx, ref);
+}
+
+
+function row_redraw(index, ref)
+{
+  var ndx = index_validate(index);
+  if(ndx < 0) return;
+
+  var up_ref;
+  var saved_tab_index;
+
+  saved_tab_index = ref.tabIndex;
+  up_ref = ref;
+
+  // go up until we find a <tr> tag, in upper case
+  while(up_ref.tagName !== "TR")
+  {
+    up_ref = up_ref.parentElement;
+    if(up_ref == null) return;
+  }
+
+  // clear it out
+  while(up_ref.hasChildNodes())
+  {
+    up_ref.removeChild(up_ref.childNodes[0]);
+  }
+
+  var cell_ref;
+  var object_ref;
+  var text_ref;
+
+  // remove button... I did all this before
+  cell_ref = document.createElement("td");
+  object_ref = document.createElement("button");
+  useful_string = "remove_button(";
+  useful_string += ndx;
+  useful_string += ")";
+  object_ref.setAttribute("onclick", useful_string);
+  text_ref = document.createTextNode("Remove");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  up_ref.appendChild(cell_ref);
+
+  // quantity column... I should have written this first, and had the redraw
+  // function call this thing row-by-row
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "inherit";
+  object_ref = document.createElement("input");
+  object_ref.style.textDecoration = "inherit";
+  object_ref.setAttribute("type", "number");
+  object_ref.setAttribute("min", "1");
+  object_ref.setAttribute("step", "1");
+  useful_string = "";
+  useful_string += display_container.items[ndx].quantity;
+  object_ref.setAttribute("value", useful_string);
+  useful_string = "qty_change(";
+  useful_string += ndx;
+  useful_string += ", this)";
+  object_ref.setAttribute("onchange", useful_string);
+  cell_ref.appendChild(object_ref);
+  up_ref.appendChild(cell_ref);
+
+  // name column
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "inherit";
+  object_ref = document.createElement("input");
+  object_ref.style.textDecoration = "inherit";
+  object_ref.setAttribute("type", "text");
+  object_ref.setAttribute("size", "40");
+  object_ref.setAttribute("value", display_container.items[ndx].name);
+  useful_string = "name_change(";
+  useful_string += ndx;
+  useful_string += ", this)";
+  object_ref.setAttribute("onchange", useful_string);
+  cell_ref.appendChild(object_ref);
+  up_ref.appendChild(cell_ref);
+
+  // heck it... I'm making those vars here so I can just copy and paste
+  // the rest directly
+  var loop = ndx;
+  var row_ref = up_ref;
+
+  // value column
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "inherit";
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "inherit";
+  object_ref.setAttribute("class", "dollardingy");
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("input");
+  object_ref.style.textDecoration = "inherit";
+  object_ref.style.textAlign = "right";
+  object_ref.setAttribute("type", "number");
+  object_ref.setAttribute("min", "1");
+  object_ref.setAttribute("step", "1");
+  useful_string = "";
+  useful_string += display_container.items[loop].value;
+  object_ref.setAttribute("value", useful_string);
+  useful_string = "value_change(";
+  useful_string += loop;
+  useful_string += ", this)";
+  object_ref.setAttribute("onchange", useful_string);
+  object_ref.setAttribute("tabindex", saved_tab_index);  // ok that was new
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // possible weight column
+  if(search_mode === SEARCH_HEAVY)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    object_ref = document.createElement("input");
+    object_ref.style.textDecoration = "inherit";
+    object_ref.style.textAlign = "right";
+    object_ref.setAttribute("type", "number");
+    object_ref.setAttribute("min", "0");
+    object_ref.setAttribute("step", "0.05");
+    useful_string = "";
+    useful_string += display_container.items[loop].weight;
+    object_ref.setAttribute("value", useful_string);
+    useful_string = "weight_change(";
+    useful_string += loop;
+    useful_string += ", this)";
+    object_ref.setAttribute("onchange", useful_string);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  // stack value
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "inherit";
+  cell_ref.style.textAlign = "right";
+  object_ref = document.createElement("span");
+  object_ref.setAttribute("class", "dollardingy");
+  cell_ref.appendChild(object_ref);
+  useful_string = "";
+  useful_string += (display_container.items[loop].quantity *
+    display_container.items[loop].value);
+  text_ref = document.createTextNode(useful_string);
+  cell_ref.appendChild(text_ref);
+  row_ref.appendChild(cell_ref);
+
+  if(search_mode === SEARCH_HEAVY)
+  {
+    // stack weight
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    cell_ref.style.textAlign = "right";
+    useful_string = Number(display_container.items[loop].quantity *
+      display_container.items[loop].weight).toFixed(2);
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+
+    // value per weight
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    cell_ref.style.textAlign = "right";
+    if(display_container.items[loop].weight == 0)
+    {
+      useful_string = "n/a";
+    }
+    else
+    {
+      useful_string = Number(display_container.items[loop].value /
+        display_container.items[loop].weight).toFixed(2);
+    }
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  // priority
+  else if(search_mode === SEARCH_PRI)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "inherit";
+    object_ref = document.createElement("input");
+    object_ref.style.textDecoration = "inherit";
+    object_ref.style.textAlign = "right";
+    object_ref.setAttribute("type", "number");
+    object_ref.setAttribute("min", "1");
+    object_ref.setAttribute("step", "1");
+    useful_string = "";
+    useful_string += display_container.items[loop].priority;
+    object_ref.setAttribute("value", useful_string);
+    useful_string = "priority_change(";
+    useful_string += loop;
+    useful_string += ", this)";
+    object_ref.setAttribute("onchange", useful_string);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  // enabled checkbox
+  cell_ref = document.createElement("td");
+  cell_ref.style.textAlign = "center";
+  object_ref = document.createElement("input");
+  object_ref.setAttribute("type", "checkbox");
+  object_ref.checked = display_container.items[loop].enabled;
+  useful_string = "enablebox(";
+  useful_string += loop;
+  useful_string += ", this)";
+  object_ref.setAttribute("onchange", useful_string);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // prices have changed; summary likely will have too
+  summary_redraw();
+
+  // and this thing to replace any currency symbols
+  dollary_update();
+}
+
+
+function weight_change(index, ref)
+{
+  var ndx = index_validate(index);
+  if(ndx < 0) return;
+
+  if(isNaN(ref.value))
+  {
+    ref.value = display_container.items[ndx].weight;
+    return;
+  }
+  var numval = Number(ref.value);
+  if(numval < 0)
+  {
+    ref.value = display_container.items[ndx].weight;
+    return;
+  }
+
+  display_container.items[ndx].weight = numval;
+  display_redraw();
+}
+
+
+function priority_change(index, ref)
+{
+  // this one won't need to do a full redraw, but it will need to redraw the
+  // summary... and as I haven't done the summary yet I should put that in its
+  // own function and also call it from the bottom of display_redraw()
+
+  var ndx = index_validate(index);
+  if(ndx < 0) return;
+
+  if(isNaN(ref.value))
+  {
+    ref.value = display_container.items[ndx].priority;
+    return;
+  }
+  var numval = Number(ref.value);
+  if((Math.round(numval) !== numval) || (numval < 1))
+  {
+    ref.value = display_container.items[ndx].priority;
+    return;
+  }
+
+  display_container.items[ndx].priority = numval;
+  summary_redraw();
+}
+
+
+function enablebox(index, ref)
+{
+  var ndx = index_validate(index);
+  if(ndx < 0) return;
+
+  // no need to do a full redraw... just go find the <tr> and change its style
+
+  var up_ref = ref;
+  while(up_ref.tagName !== "TR")
+  {
+    up_ref = up_ref.parentElement;
+    if(up_ref == null) return;
+  }
+
+  if(ref.checked)
+  {
+    display_container.items[ndx].enabled = true;
+    up_ref.style.textDecoration = "initial";
+    up_ref.style.backgroundColor = "initial";
+  }
+  else
+  {
+    display_container.items[ndx].enabled = false;
+    up_ref.style.textDecoration = "line-through";
+    up_ref.style.backgroundColor = "#a0a0a0";
+  }
+
+  // this will affect the summary, though, so...
+  summary_redraw();
+}
+
+
+function gizmo_adjust(way)
+{
+  if(typeof(way) !== typeof(Number(0))) return;
+  if(isNaN(way)) return;
+  if(Math.round(way) !== way) return;
+  if((way !== -1) && (way !== 1)) return;
+
+  var select_ref = document.getElementById("gizmo_select");
+  var threshold_ref = document.getElementById("gizmo_threshold");
+
+  if((select_ref == null) || (threshold_ref == null)) return;
+  if((select_ref.selectedIndex < 0) || (select_ref.selectedIndex > 2)) return;
+  if(isNaN(threshold_ref.value)) return;
+  var threshnum = Number(threshold_ref.value);
+  var hit;
+  var loop;
+
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    hit = false;
+    if(select_ref.selectedIndex == 0)
+    {
+      if(display_container.items[loop].priority == threshnum) hit = true;
+    }
+    else if(select_ref.selectedIndex == 1)
+    {
+      // at or above threshold
+      if(display_container.items[loop].priority >= threshnum) hit = true;
+    }
+    else if(select_ref.selectedIndex == 2)
+    {
+      // at or below threshold
+      if(display_container.items[loop].priority <= threshnum) hit = true;
+    }
+    else return;
+
+    if(hit)
+    {
+      display_container.items[loop].priority += way;
+      if(display_container.items[loop].priority < 1)
+      {
+        display_container.items[loop].priority = 1;
+      }
+    }
+  }
+
+  display_redraw();
+}
+
+
+function summary_redraw()
+{
+  var summ_ref = document.getElementById("inputs_summary_div");
+  var tv_ref = document.getElementById("target_value_input");
+  if((summ_ref == null) || (tv_ref == null)) return;
+
+  if(isNaN(tv_ref.value)) return;
+  var tv = Number(tv_ref.value);
+  if(Math.round(tv) !== tv) return;
+  if(tv < 1) return;
+
+  while(summ_ref.hasChildNodes())
+  {
+    summ_ref.removeChild(summ_ref.childNodes[0]);
+  }
+
+  if(display_container.items.length == 0) return;
+  var total_entries = 0;
+  var total_items = 0;
+  var total_value = 0;
+  var total_weight = 0;
+
+  var disabled_entries = 0;
+  var disabled_items = 0;
+  var disabled_value = 0;
+  var disabled_weight = 0;
+
+  var useful_string;
+
+  var loop;
+
+  var obj_ref;
+  var obj_ref_too;
+
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    if(display_container.items[loop].enabled)
+    {
+      ++total_entries;
+      total_items += display_container.items[loop].quantity;
+      total_value += (display_container.items[loop].quantity *
+        display_container.items[loop].value);
+      total_weight += (display_container.items[loop].quantity *
+        display_container.items[loop].weight);
+    }
+    else
+    {
+      ++disabled_entries;
+      disabled_items += display_container.items[loop].quantity;
+      disabled_value += (display_container.items[loop].quantity *
+        display_container.items[loop].value);
+      disabled_weight += (display_container.items[loop].quantity *
+        display_container.items[loop].weight);
+    }
+  }
+
+  obj_ref = document.createTextNode("Summary:");
+  summ_ref.appendChild(obj_ref);
+
+  obj_ref_too = document.createElement("ul");
+
+  obj_ref = document.createElement("li");
+  useful_string = "";
+  useful_string += total_items;
+  useful_string += " item";
+  if(total_items != 1) useful_string += "s";
+  useful_string += " in ";
+  useful_string += total_entries;
+  useful_string += " entr";
+  if(total_entries == 1) useful_string += "y";
+  else useful_string += "ies";
+  // useful_string += ".";
+  obj_ref.innerHTML = useful_string;
+  obj_ref_too.appendChild(obj_ref);
+
+  obj_ref = document.createElement("li");
+  useful_string = "Total value: ";
+  useful_string += what_of_what(total_value, tv, "target value", true);
+  obj_ref.innerHTML = useful_string;
+  obj_ref_too.appendChild(obj_ref);
+
+  if(search_mode == SEARCH_HEAVY)
+  {
+    obj_ref = document.createElement("li");
+    useful_string = "Total weight: ";
+    useful_string += Number(total_weight).toFixed(2);
+    if(total_weight != 0)
+    {
+      useful_string += " (";
+      useful_string += Number(total_value / total_weight).toFixed(2);
+      useful_string += " total value per weight)";
+    }
+    obj_ref.innerHTML = useful_string;
+    obj_ref_too.appendChild(obj_ref);
+  }
+
+  if(disabled_value > 0)
+  {
+    obj_ref = document.createElement("li");
+    useful_string = "Additionally, ";
+    useful_string += what_of_what(disabled_value, tv, "target value", true);
+    useful_string += " in ";
+    useful_string += disabled_items;
+    useful_string += " disabled item";
+    if(disabled_items != 1) useful_string += "s";
+    useful_string += " in ";
+    useful_string += disabled_entries;
+    useful_string += " disabled entr";
+    if(disabled_entries == 1) useful_string += "y";
+    else useful_string += "ies";
+    obj_ref.innerHTML = useful_string;
+    obj_ref_too.appendChild(obj_ref);
+  }
+  
+  summ_ref.appendChild(obj_ref_too);
+
+  dollary_update();
+}
+
+
+// I need this report summary format a lot -- returns a string that includes,
+// among other things, a percentage
+function what_of_what(part, whole, what, is_currency)
+{
+  var es = "[error in what_of_what()]";
+  if(isNaN(part)) return es;
+  if(isNaN(whole)) return es;
+  if(typeof(what) !== typeof("")) return es;
+  if(typeof(is_currency) !== typeof(false)) return es;
+
+  var pnum = Number(part);
+  var wnum = Number(whole);
+
+  var useful_string;
+
+  // hmm, I may need to re-do how I write out the currency symbol... maybe
+  // assign it to a variable I can read from here, and re-draw the summary on
+  // currency symbol change, since this will be returning a string of text...
+  // well, I'm trying to move away from using innerHTML to do everything but
+  // maybe I can make an exception here and just include <span>s in the
+  // returned string
+
+  // I'll only ever use this after a report of the part, so I may as well
+  // make this include that initial part, too
+
+  useful_string = "";
+
+  if(is_currency) useful_string += "<span class = \"dollardingy\"></span>";
+
+  useful_string += pnum;
+
+  // that gives an odd formatting for a negative pnum, but I don't expect ever
+  // to use negative numbers
+
+  useful_string += " (";
+  if(pnum < wnum) useful_string += "-";
+  else useful_string += "+";
+
+  if(is_currency) useful_string += "<span class = \"dollardingy\"></span>";
+
+  if(pnum < wnum) useful_string += (wnum - pnum);
+  else useful_string += (pnum - wnum);
+  if(wnum == 0)
+  {
+    if(pnum < wnum) useful_string += " under ";
+    else useful_string += " over ";
+  }
+  else
+  {
+    useful_string += "; ";
+    useful_string += fix_two_percentage(pnum, wnum);
+    useful_string += " of ";
+  }
+  useful_string += what;
+  useful_string += ": ";
+
+  if(is_currency) useful_string += "<span class = \"dollardingy\"></span>";
+
+  useful_string += wnum;
+  useful_string += ")";
+
+  return useful_string;
+}
+
+
+// replace those spans with just the current currency symbol
+function what_of_what_for_results(part, whole, what, sym)
+{
+  var useful_string = what_of_what(part, whole, what, true);
+  var replace_string = "<span class = \"dollardingy\"></span>";
+  while(useful_string.indexOf(replace_string) >= 0)
+  {
+    useful_string = useful_string.replace(replace_string, sym);
+  }
+  return useful_string;
+}
+
+
+// and I think I use these enough to justify this... also returns a string
+function fix_two_percentage(part, whole)
+{
+  var es = "[error in fix_two_percentage()]";
+  if(isNaN(part)) return es;
+  if(isNaN(whole)) return es;
+  var useful_string;
+  var pnum = Number(part);
+  var wnum = Number(whole);
+
+  if(wnum == 0) return "(n/a)%";
+
+  useful_string = "";
+  useful_string += Number((pnum / wnum) * 100).toFixed(2);
+  useful_string += "%";
+  return useful_string;
+}
+
+
+// up next: a tiny object for index-quantity references for sticking into
+// collects and avails... and maybe priority buckets
+
+function ref_pack()
+{
+  // quantity and value are the two most important pieces of data to consider;
+  // the rest can be found by following index back to whatever it indexes
+  this.index = 0;
+  this.quantity = 0;
+  this.value = 0;
+
+  this.new_copy = function()
+  {
+    var copy_pack = new ref_pack();
+    copy_pack.index = this.index;
+    copy_pack.quantity = this.quantity;
+    copy_pack.value = this.value;
+    return copy_pack;
+  }
+}
+
+
+// something big
+function important_thing()
+{
+  this.value_buckets = [];
+  this.priority_index = [];
+  this.priority_maxval_map = [];
+
+  this.target_value = 0;
+  this.best_over_collect = null;
+  this.best_under_collect = null;
+  this.best_exact_collect = null;
+
+  this.time_limit = null;
+
+  this.reset = function()
+  {
+    this.value_buckets.length = 0;
+    this.priority_index.length = 0;
+    this.priority_maxval_map.length = 0;
+    this.target_value = 0;
+    this.best_over_collect = null;
+    this.best_under_collect = null;
+    this.best_exact_collect = null;
+    this.time_limit = null;
+  }
+
+  this.fill_the_buckets = function()
+  {
+    var item_indexes = [];
+    var loop;
+    var packet;
+
+    for(loop = 0; loop < display_container.items.length; ++loop)
+    {
+      if(!(display_container.items[loop].enabled)) continue;
+      packet = new ref_pack();
+      packet.index = loop;
+      packet.quantity = display_container.items[loop].quantity;
+      packet.value = display_container.items[loop].value;
+      item_indexes.push(packet.new_copy());
+    }
+
+    item_indexes.sort(function(a, b)
+    {
+      if(a.value > b.value) return -1;
+      if(b.value > a.value) return 1;
+      return 0;
+    });
+
+    this.value_buckets.length = 0;
+    for(loop = 0; loop < item_indexes.length; ++loop)
+    {
+      if(loop == 0)
+      {
+        this.value_buckets.push([]);
+      }
+      else if(item_indexes[loop].value != item_indexes[loop - 1].value)
+      {
+        this.value_buckets.push([]);
+      }
+      this.value_buckets[this.value_buckets.length - 1].push(
+        item_indexes[loop].new_copy());
+    }
+
+    // sort each bucket by the current search mode
+    for(loop = 0; loop < this.value_buckets.length; ++loop)
+    {
+      this.value_buckets[loop].sort(function(a, b)
+      {
+        if((a.index >= display_container.items.length) ||
+          (b.index >= display_container.items.length) ||
+          (a.index < 0) || (b.index < 0))
+        {
+          alert("heck in bucket sort index bounds");
+          return 0;
+        }
+        if(search_mode == SEARCH_HEAVY)
+        {
+          if(display_container.items[a.index].weight >
+            display_container.items[b.index].weight) return -1;
+          if(display_container.items[a.index].weight <
+            display_container.items[b.index].weight) return 1;
+        }
+        else if(search_mode == SEARCH_PRI)
+        {
+          if(display_container.items[a.index].priority <
+            display_container.items[b.index].priority) return -1;
+          if(display_container.items[a.index].priority >
+            display_container.items[b.index].priority) return 1;
+        }
+        if(display_container.items[a.index].name <
+          display_container.items[b.index].name) return -1;
+        if(display_container.items[a.index].name >
+          display_container.items[b.index].name) return 1;
+        alert("sort function found identical names... that shouldn\'t happen");
+        return 0;
+      });
+    }
+
+    // some priority mode paperwork
+    if(search_mode == SEARCH_PRI)
+    {
+      this.priority_index.length = 0;
+      var transfer_array = [];
+      var lookup;
+      for(loop = 0; loop < display_container.items.length; ++loop)
+      {
+        if(!(display_container.items[loop].enabled)) continue;
+        transfer_array.push(display_container.items[loop].priority);
+      }
+      transfer_array.sort();
+      for(loop = 0; loop < transfer_array.length; ++loop)
+      {
+        if(loop == 0)
+        {
+          this.priority_index.push(transfer_array[loop]);
+        }
+        else if(transfer_array[loop] != transfer_array[loop - 1])
+        {
+          this.priority_index.push(transfer_array[loop]);
+        }
+      }
+      this.priority_maxval_map.length = 0;
+      for(loop = 0; loop < this.priority_index.length; ++loop)
+      {
+        this.priority_maxval_map.push(Number(0));
+      }
+      for(loop = 0; loop < display_container.items.length; ++loop)
+      {
+        if(!(display_container.items[loop].enabled)) continue;
+        lookup = this.priority_index.indexOf(
+          display_container.items[loop].priority);
+        if(lookup < 0)
+        {
+          alert("things are borked now");
+          return;
+        }
+        display_container.items[loop].priority_collapse_index = lookup;
+        this.priority_maxval_map[lookup] += (
+          display_container.items[loop].value *
+          display_container.items[loop].quantity);
+      }
+    }
+  }
+
+  // for de-bucketing -- ask it for an index and a number, it'll return an
+  // array of the top that-many items in that bucket (or as many as it can)
+  // elements of that array will be ref_pack()s that index display_container
+  this.items_lookup = function(idx, count)
+  {
+    var items_remaining = count;
+    var bucket_depth = 0;
+    var results = [];
+
+    if((idx < 0) || (idx >= this.value_buckets.length))
+    {
+      alert("bucket lookup error: idx out of range");
+      return results;
+    }
+    while((bucket_depth < this.value_buckets[idx].length) &&
+      (items_remaining > 0))
+    {
+      results.push((this.value_buckets[idx])[bucket_depth].new_copy());
+      if(results[results.length - 1].quantity >= items_remaining)
+      {
+        results[results.length - 1].quantity = items_remaining;
+        items_remaining = 0;
+      }
+      else
+      {
+        items_remaining -= results[results.length - 1].quantity;
+      }
+      ++bucket_depth;
+    }
+    if(items_remaining != 0)
+    {
+      alert("bucket lookup error: ran out of depth before running out of items");
+    }
+    return results;
+  }
+}
+
+var importance = new important_thing();
+
+
+function collect_and_avail()  // they share an object this time
+{
+  // these will have ref_pack()s that index into importance's value_buckets
+  this.collect = [];
+  this.avail = []
+
+  this.stored_coll_value = -1;
+  this.stored_avail_value = -1;
+
+  this.stored_coll_weight = -1;
+  this.stored_avail_weight = -1;
+
+  this.stored_coll_count = -1;
+  this.stored_avail_count = -1;
+
+  this.stored_coll_priorities = [];  // arrays of Numbers -- stored total values
+  this.stored_avail_priorities = [];  // for each (collapsed) priority rank
+
+  this.new_copy = function()
+  {
+    var loop;
+    var copy_col = new collect_and_avail();
+    for(loop = 0; loop < this.collect.length; ++loop)
+    {
+      copy_col.collect.push(this.collect[loop].new_copy());
+    }
+    for(loop = 0; loop < this.avail.length; ++loop)
+    {
+      copy_col.avail.push(this.avail[loop].new_copy());
+    }
+    // copy_col.stored_coll_value = this.stored_coll_value;
+    // copy_col.stored_avail_value = this.stored_avail_value;
+    // copy_col.stored_coll_weight = this.stored_coll_weight;
+    // copy_col.stored_avail_weight = this.stored_avail_weight;
+    // wait... I need a plain one for creating new sets at the recursion phase
+    return copy_col;
+  }
+
+  this.new_copy_with_extras = function()
+  {
+    var copy_col = this.new_copy();
+    copy_col.stored_coll_value = this.stored_coll_value;
+    copy_col.stored_avail_value = this.stored_avail_value;
+    copy_col.stored_coll_weight = this.stored_coll_weight;
+    copy_col.stored_avail_weight = this.stored_avail_weight;
+    copy_col.stored_coll_count = this.stored_coll_count;
+    copy_col.stored_avail_count = this.stored_avail_count;
+    var loop;
+    for(loop = 0; loop < this.stored_coll_priorities.length; ++loop)
+    {
+      copy_col.stored_coll_priorities.push(this.stored_coll_priorities[loop]);
+    }
+    for(loop = 0; loop < this.stored_avail_priorities.length; ++loop)
+    {
+      copy_col.stored_avail_priorities.push(this.stored_avail_priorities[loop]);
+    }
+    return copy_col;
+  }
+
+  this.new_copy_but_just_coll = function()
+  {
+    var loop;
+    var copy_col = new collect_and_avail();
+    for(loop = 0; loop < this.collect.length; ++loop)
+    {
+      copy_col.collect.push(this.collect[loop].new_copy());
+    }
+    return copy_col;
+  }
+
+  // sets this one's avail to be a copy of the other one's... give it
+  // a different collect_and_avail
+  this.steal_an_avail = function(whose)
+  {
+    var loop;
+    this.avail.length = 0;
+    for(loop = 0; loop < whose.avail.length; ++loop)
+    {
+      this.avail.push(whose.avail[loop].new_copy());
+    }
+  }
+
+  // figure out a total value
+  this.val_figure = function(what)
+  {
+    var total_val = 0;
+    var loop;
+    for(loop = 0; loop < what.length; ++loop)
+    {
+      total_val += (what[loop].quantity * what[loop].value);
+    }
+    return total_val;
+  }
+  this.coll_value = function()  // ... for collect
+  {
+    if(this.stored_coll_value < 0)
+    {
+      this.stored_coll_value = this.val_figure(this.collect);
+    }
+    return this.stored_coll_value;
+  }
+  this.avail_value = function()  // ... and for avail
+  {
+    if(this.stored_avail_value < 0)
+    {
+      this.stored_avail_value = this.val_figure(this.avail);
+    }
+    return this.stored_avail_value;
+  }
+
+/*******
+  // figure out a total weight
+  this.wt_figure = function(what)
+  {
+    var total_weight = 0;
+    var loop;
+    var loopy;
+    var thx_for_array;
+
+    for(loopy = 0; loopy < what.length; ++loopy)
+    // wait, can't do it like this because both would read from the top
+    // so I'll have to write something that gets weight of collect and avail
+    // both at once... and then take out the part I need
+  }
+*******/
+
+  // so this complicated thing... double wait... I should never have the same
+  // value buckets in both collect and avail, because they're either all N
+  // in avail or 0 through N of them in collect; so I should be able to do it
+  // the first way after all
+
+  // so back to the first way, which will work as long as members of any given
+  // value bucket do not appear in both the collect and avail of a single
+  // collect_and_avail object
+  this.wt_figure = function(what)
+  {
+    var total_weight = 0;
+    var loop;
+    var loopy;
+    var thx_for_array;
+
+    for(loopy = 0; loopy < what.length; ++loopy)
+    {
+      thx_for_array = importance.items_lookup(what[loopy].index,
+        what[loopy].quantity);
+      for(loop = 0; loop < thx_for_array.length; ++loop)
+      {
+        // and these ref_packs index display_container
+        total_weight += (
+          display_container.items[thx_for_array[loop].index].weight *
+          thx_for_array[loop].quantity);
+      }
+    }
+    return total_weight;
+  }
+  this.coll_weight = function()
+  {
+    if(this.stored_coll_weight < 0)
+    {
+      this.stored_coll_weight = this.wt_figure(this.collect);
+    }
+    return this.stored_coll_weight;
+  }
+  this.avail_weight = function()
+  {
+    if(this.stored_avail_weight < 0)
+    {
+      this.stored_avail_weight = this.wt_figure(this.avail);
+    }
+    return this.stored_avail_weight;
+  }
+
+  // item counts... let's see if I can write this without discovering a subtle
+  // flaw and then realizing a subtler reason why the flaw won't come into
+  // effect
+  this.count_em = function(what)
+  {
+    var total_count = 0;
+    var loop;
+    for(loop = 0; loop < what.length; ++loop)
+    {
+      total_count += what[loop].quantity;
+    }
+    return total_count;
+  }
+  this.coll_count = function()
+  {
+    if(this.stored_coll_count < 0)
+    {
+      this.stored_coll_count = this.count_em(this.collect);
+    }
+    return this.stored_coll_count;
+  }
+  this.avail_count = function()
+  {
+    if(this.stored_avail_count < 0)
+    {
+      this.stored_avail_count = this.count_em(this.avail);
+    }
+    return this.stored_avail_count;
+  }
+
+  // priority rank values
+  this.pri_figure = function(what)
+  {
+    // so... fill an array the size of importance.priority_index with zeroes,
+    // use items lookup function to follow a trail back to display_container,
+    // get a value and a collapsed index from there
+    var lotsa_work = [];
+    var loop;
+    for(loop = 0; loop < importance.priority_index.length; ++loop)
+    {
+      lotsa_work.push(0);
+    }
+    var loopy;
+    var more_work;
+    var val;
+    var idx;
+    for(loopy = 0; loopy < what.length; ++loopy)
+    {
+      more_work = importance.items_lookup(what[loopy].index,
+        what[loopy].quantity);
+      for(loop = 0; loop < more_work.length; ++loop)
+      {
+        val = (more_work[loop].quantity * more_work[loop].value);
+        idx = display_container.items[more_work[loop].index].priority_collapse_index;
+        // sure, now some checking
+        if((idx < 0) || (idx >= lotsa_work.length))
+        {
+          alert("oh no my priorities!");
+          return [];
+        }
+        (lotsa_work[idx]) += val;
+      }
+    }
+    return lotsa_work;
+  }
+  this.coll_pri = function()
+  {
+    if(this.stored_coll_priorities.length == 0)
+    {
+      this.stored_coll_priorities = this.pri_figure(this.collect);
+    }
+    return this.stored_coll_priorities;
+  }
+  this.avail_pri = function()
+  {
+    if(this.stored_avail_priorities.length == 0)
+    {
+      this.stored_avail_priorities = this.pri_figure(this.avail);
+    }
+    return this.stored_avail_priorities;
+  }
+}
+
+
+function button_doesnt_do_this_any_more()
+{
+  importance.reset();
+  importance.fill_the_buckets();
+  var loop;
+  var oloop;
+  var ref = document.getElementById("temp_output");
+  var useful_string = "";
+
+  for(oloop = 0; oloop < importance.value_buckets.length; ++oloop)
+  {
+    useful_string += oloop;
+    useful_string += "<br>";
+    for(loop = 0; loop < importance.value_buckets[oloop].length; ++loop)
+    {
+      useful_string += "&nbsp;index: ";
+      useful_string += (importance.value_buckets[oloop])[loop].index;
+      useful_string += "; qty: ";
+      useful_string += (importance.value_buckets[oloop])[loop].quantity;
+      useful_string += "; value: ";
+      useful_string += (importance.value_buckets[oloop])[loop].value;
+      useful_string += "<br>";
+    }
+  }
+
+  ref.innerHTML = useful_string;
+}
+
+
+function off_we_go()
+{
+  importance.reset();
+  importance.fill_the_buckets();
+
+  var starting_ca = new collect_and_avail();
+  var loop;
+  var loopy;
+  var push_pack = new ref_pack();
+
+  for(loopy = 0; loopy < importance.value_buckets.length; ++loopy)
+  {
+    push_pack.index = loopy;
+    push_pack.quantity = 0;
+    push_pack.value = 0;
+    for(loop = 0; loop < importance.value_buckets[loopy].length; ++loop)
+    {
+      if(loop == 0)
+      {
+        push_pack.value = (importance.value_buckets[loopy])[loop].value;
+      }
+      else if((importance.value_buckets[loopy])[loop - 1].value !=
+        (importance.value_buckets[loopy])[loop].value)
+      {
+        alert("oh it\'s all in ruins!");
+        return;
+      }
+      push_pack.quantity += (importance.value_buckets[loopy])[loop].quantity;
+    }
+    starting_ca.avail.push(push_pack.new_copy());
+  }
+
+  // set the target value
+  var tv_ref = document.getElementById("target_value_input");
+  if(tv_ref == null)
+  {
+    alert("hey what happened to the target value box?");
+    return;
+  }
+  if(isNaN(tv_ref.value))
+  {
+    alert("Fix the target value before starting.");
+    return;
+  }
+  importance.target_value = Number(tv_ref.value);
+  if((Math.round(importance.target_value) !== importance.target_value) ||
+    (importance.target_value < 1))
+  {
+    alert("Fix the target value before starting.");
+    return;
+  }
+
+  // set the time limit
+  importance.time_limit = new Date();
+  var tl;
+  var tl_ref = document.getElementById("time_limit_input");
+  if(tl_ref == null)
+  {
+    alert("wtf where\'s the time limit box?");
+    return;
+  }
+  if(isNaN(tl_ref.value)) tl_ref.value = 10;
+  tl = Number(tl_ref.value);
+  tl = Math.round(tl);
+  if(tl < 5) tl = 5;
+  tl_ref.value = tl;
+  importance.time_limit.setSeconds(importance.time_limit.getSeconds() + tl);
+
+  run_state = RUN_NORMAL;
+
+  magic_happens_here(starting_ca);
+
+  // we're back!
+
+  // set up the output areas (and hide the inputs)
+  var inputs_ref = document.getElementById("inputs_div");
+  var outputs_ref = document.getElementById("outputs_div");
+  var out_under_ref = document.getElementById("best_under_container");
+  var out_over_ref = document.getElementById("best_over_container");
+  var out_exact_ref = document.getElementById("best_exact_container");
+  var show_outs_ref = document.getElementById("show_results_button");
+  var button_under_ref = document.getElementById("under_remove_button");
+  var button_over_ref = document.getElementById("over_remove_button");
+  var button_exact_ref = document.getElementById("exact_remove_button");
+  var out_under_res_ref = document.getElementById("best_under_results");
+  var out_over_res_ref = document.getElementById("best_over_results");
+  var out_exact_res_ref = document.getElementById("best_exact_results");
+
+  var how_did_we_do_ref = document.getElementById("how_did_we_do");
+
+  var lets_find_money_ref = document.getElementById("dollary_select");
+
+  if((inputs_ref == null) || (outputs_ref == null) || (out_under_ref == null) ||
+    (out_over_ref == null) || (out_exact_ref == null) ||
+    (show_outs_ref == null) || (button_under_ref == null) ||
+    (button_over_ref == null) || (button_exact_ref == null) || 
+    (out_under_res_ref == null) || (out_over_res_ref == null) ||
+    (out_exact_res_ref == null) || (how_did_we_do_ref == null) ||
+    (lets_find_money_ref == null))
+  {
+    alert("all that and we're missing a reference");
+    return;
+  }
+
+  // hide the input controls
+  inputs_ref.setAttribute("hidden", "");
+
+  // clear the how'd-we-do ref and all the results refs
+  clear_ref(how_did_we_do_ref);
+  clear_ref(out_under_res_ref);
+  clear_ref(out_over_res_ref);
+  clear_ref(out_exact_res_ref);
+
+  //hide all the sub-outputs until we know which one to use
+  out_under_ref.setAttribute("hidden", "");
+  out_over_ref.setAttribute("hidden", "");
+  out_exact_ref.setAttribute("hidden", "");
+
+  // even though it's container is hidden, unhide the results button
+  show_outs_ref.removeAttribute("hidden");
+
+  // enable all the remove buttons
+  button_under_ref.removeAttribute("disabled");
+  button_over_ref.removeAttribute("disabled");
+  button_exact_ref.removeAttribute("disabled");
+
+  // now let's take a look at what we got
+
+  var object_ref;
+  var text_ref;
+  var useful_string;
+  var dollary_string;
+
+  if(run_state == RUN_NORMAL)
+  {
+    useful_string = "Search finished completely.";
+  }
+  else if(run_state == RUN_HALT_SUCCESS)
+  {
+    useful_string = "Search finished by successfully meeting criteria.";
+  }
+  else if(run_state == RUN_HALT_TIMEOUT)
+  {
+    useful_string = "Search exceeded time limit and may not have the best possible results.";
+  }
+  else if(run_state == RUN_HALT_ERROR)
+  {
+    useful_string = "Search stopped due to an error; sorry about that.";
+  }
+  else
+  {
+    useful_string = "i dunno man";
+  }
+  text_ref = document.createTextNode(useful_string);
+  how_did_we_do_ref.appendChild(text_ref);
+  object_ref = document.createElement("br");
+  how_did_we_do_ref.appendChild(object_ref);
+  object_ref = document.createElement("br");
+  how_did_we_do_ref.appendChild(object_ref);
+  // text_ref = document.createTextNode("Target value: ");
+  // this currency symbol won't adapt, but will stay as it was when the
+  // search was run
+  useful_string = "Target value: ";
+  dollary_string = "";
+  if(lets_find_money_ref.selectedIndex != 0)
+  {
+    dollary_string = lets_find_money_ref.value;
+  }
+  useful_string += dollary_string;
+  useful_string += importance.target_value;
+  text_ref = document.createTextNode(useful_string);
+  how_did_we_do_ref.appendChild(text_ref);
+  object_ref = document.createElement("br");
+  how_did_we_do_ref.appendChild(object_ref);
+  useful_string = "Search mode: ";
+  if(search_mode == SEARCH_FAST) useful_string += "Fastest match";
+  else if(search_mode == SEARCH_FEW) useful_string += "Fewest items";
+  else if(search_mode == SEARCH_HEAVY) useful_string += "Heaviest match";
+  else if(search_mode == SEARCH_PRI) useful_string += "Priority mode";
+  else useful_string += "wut";
+  text_ref = document.createTextNode(useful_string);
+  how_did_we_do_ref.appendChild(text_ref);
+  object_ref = document.createElement("br");
+  how_did_we_do_ref.appendChild(object_ref);
+  object_ref = document.createElement("br");
+  how_did_we_do_ref.appendChild(object_ref);
+
+  // over/under or exact?
+
+  if(importance.best_exact_collect == null)
+  {
+    // over/under... even if one or both of those are null, too
+    out_under_ref.removeAttribute("hidden");
+    out_over_ref.removeAttribute("hidden");
+    if(importance.best_under_collect == null)
+    {
+      text_ref = document.createTextNode("Wait, no best-under results after all.");
+      out_under_res_ref.appendChild(text_ref);
+      button_under_ref.setAttribute("disabled", "");
+    }
+    else
+    {
+      hypertext_the_results(importance.best_under_collect, out_under_res_ref);
+    }
+    if(importance.best_over_collect == null)
+    {
+      text_ref = document.createTextNode("Oh this one\'s empty, sorry.");
+      out_over_res_ref.appendChild(text_ref);
+      button_over_ref.setAttribute("disabled", "");
+    }
+    else
+    {
+      hypertext_the_results(importance.best_over_collect, out_over_res_ref);
+    }
+  }
+  else
+  {
+    // exact!
+    out_exact_ref.removeAttribute("hidden");
+    hypertext_the_results(importance.best_exact_collect, out_exact_res_ref);
+  }
+
+  // and finally, un-hide the output
+  outputs_ref.removeAttribute("hidden");
+}
+
+
+// remove all child nodes from an HTML element, and more elegantly than
+// innerHTML = ""
+function clear_ref(ref)
+{
+  while(ref.hasChildNodes())
+  {
+    ref.removeChild(ref.childNodes[0]);
+  }
+}
+
+
+// the recursion function
+function magic_happens_here(ca)
+{
+  var better_result;
+  var loop;
+  var transfer_pack;
+  var next_collect;
+  var peel_avail;
+
+  var best_pri;
+  var this_coll_pri;
+  var this_avail_pri;
+
+  // few easy checks first
+  if(run_state != RUN_NORMAL) return;
+
+  var time_now = new Date();
+  if(time_now > importance.time_limit)
+  // if(false)
+  {
+    if(run_state == RUN_NORMAL) run_state = RUN_HALT_TIMEOUT;
+    return;
+  }
+  time_now = 0;
+
+  // now some harder checks, including possible paperwork
+  if(ca.coll_value() < importance.target_value)
+  {
+    if(ca.collect.length > 0)
+    {
+      better_result = which_is_better(importance.best_under_collect, ca);
+      if(better_result == 1)
+      {
+        importance.best_under_collect = ca.new_copy_with_extras();
+      }
+    }
+
+    // check whether it is worthwhile to continue
+    if(importance.best_exact_collect != null)
+    {
+      if(search_mode == SEARCH_FEW)
+      {
+        if(ca.coll_count() >= importance.best_exact_collect.coll_count())
+        {
+          return;
+        }
+      }
+      else if(search_mode == SEARCH_HEAVY)
+      {
+        if((ca.coll_weight() + ca.avail_weight()) <
+          importance.best_exact_collect.coll_weight())
+        {
+          return;
+        }
+      }
+      else if(search_mode == SEARCH_PRI)
+      {
+        // let's not get too complicated here
+        best_pri = importance.best_exact_collect.coll_pri();
+        this_coll_pri = ca.coll_pri();
+        this_avail_pri = ca.avail_pri();
+        if((best_pri.length > 0) && (this_coll_pri.length > 0) &&
+          (this_avail_pri.length > 0))
+        {
+          if(best_pri[0] > (this_coll_pri[0] + this_avail_pri[0]))
+          {
+            return;
+          }
+        }
+      }
+    }
+  }
+  else if(ca.coll_value() > importance.target_value)
+  {
+    better_result = which_is_better(importance.best_over_collect, ca);
+    if(better_result == 1)
+    {
+      importance.best_over_collect = ca.new_copy_with_extras();
+      return;  // end of this line
+    }
+  }
+  else if(ca.coll_value() == importance.target_value)
+  {
+    importance.best_under_collect = null;
+    importance.best_over_collect = null;
+    better_result = which_is_better(importance.best_exact_collect, ca);
+    if(better_result == 1)
+    {
+      importance.best_exact_collect = ca.new_copy_with_extras();
+      if(search_mode == SEARCH_FAST)
+      {
+        run_state = RUN_HALT_SUCCESS;
+      }
+      else if(search_mode == SEARCH_PRI)
+      {
+        if(none_better())
+        {
+          run_state = RUN_HALT_SUCCESS;
+        }
+      }
+    }
+    return;
+  }
+  else
+  {
+    alert("wait what");
+    run_state = RUN_HALT_ERROR;
+    return;
+  }
+
+  // now form the collect and avail for the next recursion step
+  // 1. next
+
+  peel_avail = new collect_and_avail();
+  peel_avail.steal_an_avail(ca);
+
+  transfer_pack = new ref_pack();
+
+  while(peel_avail.avail.length > 0)
+  {
+    if(peel_avail.avail[0].quantity <= 0)
+    {
+      alert("an empty quantity snuck in");
+      run_state = RUN_HALT_ERROR;
+      return;
+    }
+
+    // loop 1 to quantity sending off that many in next collect
+    for(loop = 1; loop <= peel_avail.avail[0].quantity; ++loop)
+    {
+      // start by re-setting next_collect after any pervious loop
+      next_collect = ca.new_copy_but_just_coll();
+
+      // peel off the front of peel_avail
+      transfer_pack.index = peel_avail.avail[0].index;
+      transfer_pack.quantity = loop;
+      transfer_pack.value = peel_avail.avail[0].value;
+
+      // place that on the back of next_collect...'s collect
+      next_collect.collect.push(transfer_pack.new_copy());
+
+      // shortcut time!
+      // make sure the value of that new thing doesn't already disqualify it,
+      // and if it does, then even more of this same new thing would be even
+      // worse
+      if(importance.best_exact_collect != null)
+      {
+        if(importance.best_exact_collect.coll_value() <
+          next_collect.coll_value()) break;
+      }
+      else if(importance.best_over_collect != null)
+      {
+        if(importance.best_over_collect.coll_value() <
+          next_collect.coll_value()) break;
+      }
+
+      // set next_collect's avail to the peel one (for the moment)
+      next_collect.steal_an_avail(peel_avail);
+
+      // and remove the front of next_collect's new avail, since it's the
+      // thing being sent as the most recent addition to its collect
+      // (and also since I promised other parts of the script that a given
+      // price bucket would not appear in both collect and avail at once)
+      next_collect.avail.shift();
+
+      // it's all ready! send it off to... another of this!
+      magic_happens_here(next_collect);
+    }
+
+    // now that we've sent all possibilities of 1 to quantity of that avail
+    // item, remove it and let the next thing get sent
+    peel_avail.avail.shift();
+  }
+
+  // that should do it!
+  // let's go see what we got
+}
+
+
+// returns -1 if collect_and_avail a is better than b; 1 if b is better than
+// a, and 0 if they're considered identical... but be sure that they're not on
+// opposite sides of the target value, because that'll heck out with an error
+function which_is_better(a, b)
+{
+  if((a == null) && (b == null)) return 0;
+  if(b == null) return -1;
+  if(a == null) return 1;
+
+  if(((a.coll_value() < importance.target_value) &&
+    (b.coll_value() > importance.target_value)) ||
+    ((a.coll_value() > importance.target_value) &&
+    (b.coll_value() < importance.target_value)))
+  {
+    run_state = RUN_HALT_ERROR;
+    alert("Collections on opposite sides of target :(");
+    return 0;
+  }
+
+  // that's a lot to type each time
+  var tv = importance.target_value;
+
+  // all cases: closer to target is better
+  if((a.coll_value() == tv) && (b.coll_value() != tv)) return -1;
+  if((a.coll_value() != tv) && (b.coll_value() == tv)) return 1;
+
+  // so it is not the case that one is equal to target and the other isn't...
+  // they're either both equal to target or both over or both under (possibly
+  // still equal to each other)
+
+  if(a.coll_value() < tv)
+  {
+    if((tv - a.coll_value()) < (tv - b.coll_value())) return -1;
+    if((tv - a.coll_value()) > (tv - b.coll_value())) return 1;
+  }
+  else if(a.coll_value() > tv)
+  {
+    if((a.coll_value() - tv) < (b.coll_value() - tv)) return -1;
+    if((a.coll_value() - tv) > (b.coll_value() - tv)) return 1;
+  }
+
+  // so at this point they're equal to each other, regardless of their equality
+  // or not to target value
+
+  if(search_mode == SEARCH_FEW)
+  {
+    if(a.coll_count() < b.coll_count()) return -1;
+    if(b.coll_count() < a.coll_count()) return 1;
+    return 0;
+  }
+  else if(search_mode == SEARCH_HEAVY)
+  {
+    if(a.coll_weight() > b.coll_weight()) return -1;
+    if(b.coll_weight() > a.coll_weight()) return 1;
+    return 0;
+  }
+  else if(search_mode == SEARCH_PRI)
+  {
+    var a_ray;
+    var b_ray;
+    var loop;
+    a_ray = a.coll_pri();
+    b_ray = b.coll_pri();
+    if(a_ray.length != b_ray.length)
+    {
+      alert("a thing has gone awry!");
+      run_state = RUN_HALT_ERROR;
+      return 0;
+    }
+    for(loop = 0; loop < a_ray.length; ++loop)
+    {
+      // is there more value at this priority rank in one of these sets?
+      if(a_ray[loop] > b_ray[loop]) return -1;
+      if(a_ray[loop] < b_ray[loop]) return 1;
+      // not so far... try the next one
+    }
+    return 0;  // no difference all the way through
+  }
+
+  // default else -- either SEARCH_FAST or somebody's been messing with stuff
+  return 0;
+}
+
+
+// use in priority mode to check importance.best_exact_collect; returns true
+// if it can tell there cannot be a better set, false otherwise; (not vitally
+// important that it be perfect, as long as there are no false positives)
+function none_better()
+{
+  if(importance.best_exact_collect == null) return false;
+
+  var a_ray = importance.best_exact_collect.coll_pri();
+  var loop;
+  var needed_this_time;
+  var remaining_target;
+
+  if(a_ray.length != importance.priority_maxval_map.length)
+  {
+    alert("I was wrong about something.");
+    run_state = RUN_HALT_ERROR;
+    return false;
+  }
+
+  remaining_target = importance.target_value;
+  for(loop = 0; loop < a_ray.length; ++loop)
+  {
+    if(a_ray[loop] > importance.priority_maxval_map[loop])
+    {
+      alert("I have mis-mathed something.");
+      run_state = RUN_HALT_ERROR;
+      return false;
+    }
+
+    if(remaining_target > importance.priority_maxval_map[loop])
+    {
+      needed_this_time = importance.priority_maxval_map[loop];
+    }
+    else
+    {
+      needed_this_time = remaining_target;
+    }
+    if(a_ray[loop] < needed_this_time)
+    {
+      return false;
+    }
+    if((a_ray[loop] > needed_this_time) ||
+      (remaining_target < needed_this_time))
+    {
+      alert("I thought I ruled that out :|");
+      run_state = RUN_HALT_ERROR;
+      return false;
+    }
+    remaining_target -= needed_this_time;
+    if(remaining_target == 0)
+    {
+      return true;
+    }
+  }
+
+  // if it gets down here it must have every single item in its collection --
+  // even if this doesn't shortcut it, it will be over soon anyway so it
+  // doesn't matter what I return
+  return false;
+}
+
+
+// takes a collect_and_avail in ca, turns it into some helpful HTML summary,
+// and inserts it into the HTML element referenced by ref
+function hypertext_the_results(ca, ref)
+{
+  var currency_string;
+  var useful_string;
+  var currency_ref = document.getElementById("dollary_select");
+
+  var loop;
+  var oloop;
+  var ray;
+  var b_ray;
+
+  currency_string = "$";
+  if(currency_ref != null)
+  {
+    if(currency_ref.selectedIndex == 0) currency_string = "";
+    else currency_string = currency_ref.value;
+  }
+
+  var table_ref;
+  var row_ref;
+  var cell_ref;
+  var object_ref;
+  var text_ref;
+
+  table_ref = document.createElement("table");
+
+  // header... oh boy another of these
+  row_ref = document.createElement("tr");
+
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "underline";
+  cell_ref.style.verticalAlign = "bottom";
+  text_ref = document.createTextNode("Qty.");
+  cell_ref.appendChild(text_ref);
+  row_ref.appendChild(cell_ref);
+
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "underline";
+  cell_ref.style.verticalAlign = "bottom";
+  text_ref = document.createTextNode("Name");
+  cell_ref.appendChild(text_ref);
+  row_ref.appendChild(cell_ref);
+
+  cell_ref = document.createElement("td");
+  cell_ref.style.textDecoration = "underline";
+  cell_ref.style.verticalAlign = "bottom";
+  text_ref = document.createTextNode("Value");
+  cell_ref.appendChild(text_ref);
+  row_ref.appendChild(cell_ref);
+
+  if(search_mode == SEARCH_HEAVY)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "underline";
+    cell_ref.style.verticalAlign = "bottom";
+    text_ref = document.createTextNode("Weight");
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  cell_ref = document.createElement("td");
+  cell_ref.style.verticalAlign = "bottom";
+  text_ref = document.createTextNode("Stack");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("br");
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  text_ref = document.createTextNode("Value");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  if(search_mode == SEARCH_HEAVY)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.style.verticalAlign = "bottom";
+    text_ref = document.createTextNode("Stack");
+    cell_ref.appendChild(text_ref);
+    object_ref = document.createElement("br");
+    cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "underline";
+    text_ref = document.createTextNode("Weight");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+
+    cell_ref = document.createElement("td");
+    cell_ref.style.verticalAlign = "bottom";
+    text_ref = document.createTextNode("Value/");
+    cell_ref.appendChild(text_ref);
+    object_ref = document.createElement("br");
+    cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("span");
+    object_ref.style.textDecoration = "underline";
+    text_ref = document.createTextNode("Weight");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    row_ref.appendChild(cell_ref);
+  }
+  else if(search_mode == SEARCH_PRI)
+  {
+    cell_ref = document.createElement("td");
+    cell_ref.style.textDecoration = "underline";
+    cell_ref.style.verticalAlign = "bottom";
+    text_ref = document.createTextNode("Priority");
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+  }
+
+  table_ref.appendChild(row_ref);
+
+  b_ray = [];
+
+  for(oloop = 0; oloop < ca.collect.length; ++oloop)
+  {
+    ray = importance.items_lookup(ca.collect[oloop].index,
+      ca.collect[oloop].quantity);
+    for(loop = 0; loop < ray.length; ++loop)
+    {
+      if(ray[loop].quantity == 0)
+      {
+        alert("whoops a zero");
+        continue;
+      }
+
+      b_ray.push(ray[loop].new_copy());
+    }
+  }
+
+  b_ray.sort(function(a, b)
+  {
+    if(display_container.items[a.index].name <
+      display_container.items[b.index].name)
+    {
+      return -1;
+    }
+    if(display_container.items[a.index].name >
+      display_container.items[b.index].name)
+    {
+      return 1;
+    }
+    return 0;
+  });
+
+  for(loop = 0; loop < b_ray.length; ++loop)
+  {
+    row_ref = document.createElement("tr");
+
+    cell_ref = document.createElement("td");
+    cell_ref.style.textAlign = "right";
+    useful_string = "";
+    useful_string += b_ray[loop].quantity;
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+
+    cell_ref = document.createElement("td");
+    text_ref = document.createTextNode(
+      display_container.items[b_ray[loop].index].name);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+
+    cell_ref = document.createElement("td");
+    cell_ref.style.textAlign = "right";
+    useful_string = "";
+    useful_string += currency_string;
+    useful_string += b_ray[loop].value;
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+
+    if(search_mode == SEARCH_HEAVY)
+    {
+      cell_ref = document.createElement("td");
+      cell_ref.style.textAlign = "right";
+      text_ref = document.createTextNode(
+        Number(display_container.items[b_ray[loop].index].weight).toFixed(2));
+      cell_ref.appendChild(text_ref);
+      row_ref.appendChild(cell_ref);
+    }
+
+    cell_ref = document.createElement("td");
+    cell_ref.style.textAlign = "right";
+    useful_string = "";
+    useful_string += currency_string;
+    useful_string += (b_ray[loop].value * b_ray[loop].quantity);
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
+
+    if(search_mode == SEARCH_HEAVY)
+    {
+      cell_ref = document.createElement("td");
+      cell_ref.style.textAlign = "right";
+      useful_string = Number(b_ray[loop].quantity *
+        display_container.items[b_ray[loop].index].weight).toFixed(2);
+      text_ref = document.createTextNode(useful_string);
+      cell_ref.appendChild(text_ref);
+      row_ref.appendChild(cell_ref);
+
+      cell_ref = document.createElement("td");
+      cell_ref.style.textAlign = "right";
+      if(display_container.items[b_ray[loop].index].weight == 0)
+      {
+        useful_string = "n/a";
+      }
+      else
+      {
+        useful_string = Number(b_ray[loop].value /
+          display_container.items[b_ray[loop].index].weight).toFixed(2);
+      }
+      text_ref = document.createTextNode(useful_string);
+      cell_ref.appendChild(text_ref);
+      row_ref.appendChild(cell_ref);
+    }
+    else if(search_mode == SEARCH_PRI)
+    {
+      cell_ref = document.createElement("td");
+      cell_ref.style.textAlign = "right";
+      useful_string = "";
+      useful_string += display_container.items[b_ray[loop].index].priority;
+      text_ref = document.createTextNode(useful_string);
+      cell_ref.appendChild(text_ref);
+      row_ref.appendChild(cell_ref);
+    }
+
+    table_ref.appendChild(row_ref);
+  }
+
+  ref.appendChild(table_ref);
+
+  var total_value = 0;
+  var total_weight = 0;
+  var total_items = 0;
+  var privals = [];
+  var pri_lookup;
+
+  for(loop = 0; loop < importance.priority_index.length; ++loop)
+  {
+    privals.push(0);
+  }
+
+  for(loop = 0; loop < b_ray.length; ++loop)
+  {
+    total_value += (b_ray[loop].quantity * b_ray[loop].value);
+    total_items += b_ray[loop].quantity;
+    if(search_mode == SEARCH_HEAVY)
+    {
+      total_weight += (b_ray[loop].quantity *
+        display_container.items[b_ray[loop].index].weight);
+    }
+    else if(search_mode == SEARCH_PRI)
+    {
+      pri_lookup = display_container.items[b_ray[loop].index].priority_collapse_index;
+      privals[pri_lookup] += (b_ray[loop].quantity * b_ray[loop].value);
+    }
+  }
+
+  table_ref = document.createElement("ul");  // re-using sure why not
+
+  obj_ref = document.createElement("li");
+  useful_string = "Total items: ";
+  useful_string += total_items;
+  text_ref = document.createTextNode(useful_string);
+  obj_ref.appendChild(text_ref);
+  table_ref.appendChild(obj_ref);
+
+  obj_ref = document.createElement("li");
+  useful_string = "Total value: ";
+  useful_string += what_of_what_for_results(total_value,
+    importance.target_value, "target value", currency_string);
+  text_ref = document.createTextNode(useful_string);
+  obj_ref.appendChild(text_ref);
+  table_ref.appendChild(obj_ref);
+
+  if(search_mode == SEARCH_HEAVY)
+  {
+    obj_ref = document.createElement("li");
+    useful_string = "Total weight: ";
+    useful_string += Number(total_weight).toFixed(2);
+    if(total_weight != 0)
+    {
+      useful_string += " (";
+      useful_string += Number(total_value / total_weight).toFixed(2);
+      useful_string += " overall value/weight)";
+    }
+    text_ref = document.createTextNode(useful_string);
+    obj_ref.appendChild(text_ref);
+    table_ref.appendChild(obj_ref);
+  }
+  else if(search_mode == SEARCH_PRI)
+  {
+    obj_ref = document.createElement("li");
+    text_ref = document.createTextNode("Priority rank values:");
+    obj_ref.appendChild(text_ref);
+    // now reusing row_ref for the inner <ul> and cell_ref for the <li>s
+    row_ref = document.createElement("ul");
+    for(loop = 0; loop < privals.length; ++loop)
+    {
+      cell_ref = document.createElement("li");
+      useful_string = "";
+      useful_string += importance.priority_index[loop];
+      useful_string += ": ";
+      useful_string += currency_string;
+      useful_string += privals[loop];
+      text_ref = document.createTextNode(useful_string);
+      cell_ref.appendChild(text_ref);
+      row_ref.appendChild(cell_ref);
+    }
+    obj_ref.appendChild(row_ref);
+    table_ref.appendChild(obj_ref);
+  }
+
+  ref.appendChild(table_ref);
+}
+
+
+function show_outputs()
+{
+  document.getElementById("inputs_div").setAttribute("hidden", "");
+  document.getElementById("outputs_div").removeAttribute("hidden");
+}
+
+
+function show_inputs()
+{
+  document.getElementById("inputs_div").removeAttribute("hidden");
+  document.getElementById("outputs_div").setAttribute("hidden", "");
+}
+
+
+function best_under_remove()
+{
+  alert("Sorry, this button doesn\'t work yet.");
+}
+
+
+function best_over_remove()
+{
+  alert("This button coming early 2013!");
+}
+
+
+function best_exact_remove()
+{
+  alert("This button will work soon.");
+}
+
+
+</script>
+
+</head>
+
+<body>
+'Nother Powerful Nifty Purchase
+<br><br>
+This one's power is its interface!
+<br><br>
+By Shmoot; August, 2019
+<br><br>
+Find a subset of a collection of items such that the subset's total value matches a given target value.  Useful when visiting merchants in Skyrim.
+<br><br>
+
+Settings:<br>
+Target value: <span class = "dollardingy">$</span><input id = "target_value_input" type = "number" value = "1" min = "1" step = "1" onchange = "summary_redraw()"><!--<input id = "target_value_input" type = "number" value = "1" min = "1" step = "1" style = "text-align:right">--><br>
+Search mode: <select id = "search_mode_select" onchange = "search_mode_change()">
+  <option title = "Stops search as soon as any match is found.">Fastest match</option>
+  <option title = "Finds the smallest combination of items whose values match the target; tends to select high-valued items and is good for when you will be visiting another merchant to sell what was not sold to this merchant.">Fewest items</option>
+  <option title = "Finds the heaviest combination of items whose values match the target; useful for when you are severely overburdened or when this is the last merchant who will be visited on this trip.">Heaviest match</option>
+  <option title = "Allows you to assign items priority ranks; lower values get priority (i.e. items with priority rank 1 are preferred over items with rank 2, etc.); ranks need not be unique; useful when visiting a general-goods merchant to whom you would prefer to sell the items that you cannot sell to other merchants.">Priority mode</option>
+</select> (In all cases a set closer to the target value is chosen over a set further away.)<br>
+Miscellaneous: Currency symbol: <select id = "dollary_select" onchange = "dollary_update()">
+  <option>[none]</option>
+  <option selected>$</option>
+  <option>&#162;</option>
+  <option>&#163;</option>
+  <option>&#128;</option>
+  <option>&#165;</option>
+</select> || Search time limit: <input id = "time_limit_input" type = "number" min = "5" max = "60" step = "1" value = "10" style = "text-align:right" title = "This sort of search problem can get very big, very quickly.  Set a maximum search time here to keep things resonable.  If the search lasts longer than this, it will end and display the best result it has at that point."> second(s).
+<br><br>
+
+<div id = "inputs_div">
+Add an item:<br>
+<table>
+  <tr>
+    <td style = "text-align:right">Quantity:</td>
+    <td><input id = "quantity_input_new" type = "number" min = "1" step = "1" value = "1"></td>
+  </tr>
+  <tr>
+    <td style = "text-align:right">Name:</td>
+    <td><input id = "name_input_new" type = "text" size = "40"> <span id = "name_derp">(Must be unique.)</span></td>
+  </tr>
+  <tr>
+    <td style = "text-align:right">Value:</td>
+    <td><span class = "dollardingy">$</span><input id = "value_input_new" type = "number" min = "1" step = "1" value = "1"></td>
+  </tr>
+  <tr id = "weight_row" hidden>
+    <td style = "text-align:right">Weight:</td>
+    <td><input id = "weight_input_new" type = "number" min = "0" value = "0" step = "0.05"></td>
+  </tr>
+  <tr id = "priority_row" hidden>
+    <td style = "text-align:right">Priority:</td>
+    <td><input id = "priority_input_new" type = "number" min = "1" value = "1" step = "1">
+  </tr>
+</table>
+<button onclick = "add_button()">Add this thing!</button>
+
+<br><br>
+
+Current collection:<span id = "nothing_span"> nothing.</span>
+<div id = "input_summary_tables"></div>
+
+<div id = "priority_control_gizmo" hidden>
+<br>
+Priority Control Gizmo: <button onclick = "gizmo_adjust(1)">+1</button> /
+<button onclick = "gizmo_adjust(-1)">-1</button> to all priority ranks at
+<select id = "gizmo_select">
+  <option>(nope, just at)</option>
+  <option selected>or above</option>
+  <option>or below</option>
+</select> rank
+<input id = "gizmo_threshold" type = "number" min = "1" step = "1" value = "1">
+</div>
+
+<br>
+
+<div id = "inputs_summary_div"></div>
+
+<br>
+<button onclick = "off_we_go()">Start the search!</button>
+<br><br>
+<button id = "show_results_button" hidden onclick = "show_outputs()">
+Show the most recent results.</button>
+</div>
+
+
+<div id = "outputs_div" hidden>
+Results!<br>
+  <button onclick = "show_inputs()">
+    Back to inputs (results will still be here if needed).
+  </button>
+  <div id = "how_did_we_do"></div>
+
+  <div id = "best_under_container" hidden>
+    No exact matches found; here's the best under:
+    <div id = "best_under_results">
+    </div>
+    <button id = "under_remove_button" onclick = "best_under_remove()">
+      Remove the best-under results from the main collection.
+    </button>
+    <br><br>
+  </div>
+  <div id = "best_over_container" hidden>
+    And the best over:
+    <div id = "best_over_results">
+    </div>
+    <button id = "over_remove_button" onclick = "best_over_remove()">
+      Remove the best-over results from the main collection.
+    </button>
+  </div>
+  <div id = "best_exact_container" hidden>
+    Best EXACT MATCH found:
+    <div id = "best_exact_results">
+    </div>
+    <button id = "exact_remove_button" onclick = "best_exact_remove()">
+      Remove these results from the main collection.
+    </button>
+  </div>
+</div>
+
+</body>
+
+</html>
