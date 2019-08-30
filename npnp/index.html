@@ -7,6 +7,10 @@ forgets due to copying all over the place, so...
 npnp.html - 'Nother Powerful Nifty Purchase
 started August 19, 2019
 
+Reached Early-Access alpha August 26, 2019
+
+Beta release August 29, 2019
+
 -->
 
 <head>
@@ -96,6 +100,7 @@ function search_mode_change()
   }
 
   display_redraw();
+  secret_write();
 }
 
 
@@ -204,6 +209,12 @@ function add_button()
 
   if((qty_ref == null) || (name_ref == null) || (value_ref == null) ||
     (weight_ref == null) || (priority_ref == null)) return;
+
+  qty_ref.value = (qty_ref.value).trim();
+  name_ref.value = (name_ref.value).trim();
+  value_ref.value = (value_ref.value).trim();
+  weight_ref.value = (weight_ref.value).trim();
+  priority_ref.value = (priority_ref.value).trim();
 
   if(isNaN(qty_ref.value)) return;
   if(Math.round(qty_ref.value) != qty_ref.value) return;
@@ -1058,6 +1069,8 @@ function summary_redraw()
   {
     summ_ref.removeChild(summ_ref.childNodes[0]);
   }
+
+  secret_write();
 
   if(display_container.items.length == 0) return;
   var total_entries = 0;
@@ -2002,6 +2015,8 @@ function magic_happens_here(ca)
   var best_pri;
   var this_coll_pri;
   var this_avail_pri;
+  var qty_top;
+  var limit_val;
 
   // few easy checks first
   if(run_state != RUN_NORMAL) return;
@@ -2015,10 +2030,64 @@ function magic_happens_here(ca)
   }
   time_now = 0;
 
+/*******
+  // ----------------
+  // DEBUG -- check to make sure that no price level appears in both
+  // collect and avail
+  var c_walk = 0;
+  var a_walk = 0;
+  var c_lastval = -1;
+  var a_lastval = -1;
+  var lurt_string;
+  while((c_walk < ca.collect.length) && (a_walk < ca.avail.length))
+  {
+    if(c_lastval != -1)
+    {
+      if(ca.collect[c_walk].value >= c_lastval)
+      {
+        alert("it turns out values aren\'t sorted in collects");
+      }
+    }
+    if(a_lastval != -1)
+    {
+      if(ca.avail[a_walk].value >= a_lastval)
+      {
+        alert("it turns out values aren\'t sorted in avails");
+      }
+    }
+
+    if(ca.collect[c_walk].value > ca.avail[a_walk].value)
+    {
+      // advance c_walk
+      c_lastval = ca.collect[c_walk].value;
+      ++c_walk;
+    }
+    else if(ca.collect[c_walk].value < ca.avail[a_walk].value)
+    {
+      // advance a_walk
+      a_lastval = ca.avail[a_walk].value
+      ++a_walk;
+    }
+    else if(ca.collect[c_walk].value == ca.avail[a_walk].value)
+    {
+      lurt_string = "oh no!  same value ($";
+      lurt_string += ca.collect[c_walk].value;
+      lurt_string += ") found in both collect and avail!";
+      alert(lurt_string);
+    }
+    else
+    {
+      alert("heckwut");
+    }
+  }
+  // DEBUG END
+  // ----------------
+*******/
+
   // now some harder checks, including possible paperwork
   if(ca.coll_value() < importance.target_value)
   {
-    if(ca.collect.length > 0)
+    if((importance.best_exact_collect == null) && (ca.collect.length > 0))
     {
       better_result = which_is_better(importance.best_under_collect, ca);
       if(better_result == 1)
@@ -2028,6 +2097,27 @@ function magic_happens_here(ca)
     }
 
     // check whether it is worthwhile to continue
+
+    // I forgot plain checking values to see whether it can reach at least a
+    // new best under, but I'll leave that until I've solved this weight thing
+    // okay here it is anyway since it could speed up looking for this weight
+    // thing
+    if(importance.best_exact_collect != null)
+    {
+      if((ca.coll_value() + ca.avail_value()) < importance.target_value)
+      {
+        return;
+      }
+    }
+    else if(importance.best_under_collect != null)
+    {
+      if((ca.coll_value() + ca.avail_value()) <
+        importance.best_under_collect.coll_value())
+      {
+        return;
+      }
+    }
+
     if(importance.best_exact_collect != null)
     {
       if(search_mode == SEARCH_FEW)
@@ -2101,7 +2191,6 @@ function magic_happens_here(ca)
   }
 
   // now form the collect and avail for the next recursion step
-  // 1. next
 
   peel_avail = new collect_and_avail();
   peel_avail.steal_an_avail(ca);
@@ -2118,13 +2207,48 @@ function magic_happens_here(ca)
     }
 
     // loop 1 to quantity sending off that many in next collect
-    for(loop = 1; loop <= peel_avail.avail[0].quantity; ++loop)
+    // for(loop = 1; loop <= peel_avail.avail[0].quantity; ++loop)
+    // bit trickier in setting up the loop, now -- when I tried counting
+    // downward, some shortcut logic that assumed upward counting was causing
+    // valid sets to be skipped... so I'll get rid of that part and instead
+    // I'll first figure out how many of this first item can fit inside the
+    // target value (or at not pass the current best over) and set that as
+    // the loop cap
+    if(importance.best_exact_collect != null)
     {
-      // start by re-setting next_collect after any pervious loop
+      limit_val = importance.target_value;
+      qty_top = Math.floor((limit_val - ca.coll_value()) /
+        peel_avail.avail[0].value);
+    }
+    else if(importance.best_over_collect != null)
+    {
+      limit_val = importance.best_over_collect.coll_value();
+      qty_top = Math.floor((limit_val - ca.coll_value()) /
+        peel_avail.avail[0].value);
+    }
+    else
+    {
+      // no exact or even over yet -- use ceil on limit of target value so it
+      // at least gets an over if not an exact
+      qty_top = Math.ceil((importance.target_value - ca.coll_value()) /
+        peel_avail.avail[0].value);
+    }
+    // and no matter how we got it, make sure qty_top isn't too big
+    if(qty_top > peel_avail.avail[0].quantity)
+    {
+      qty_top = peel_avail.avail[0].quantity;
+    }
+    for(loop = qty_top; loop >= 1; --loop)
+    {
+      // start by re-setting next_collect after any previous loop
       next_collect = ca.new_copy_but_just_coll();
 
       // peel off the front of peel_avail
       transfer_pack.index = peel_avail.avail[0].index;
+      // transfer_pack.quantity = loop;
+      // above is 1 to quantity; below let's try quantity down to 1
+      // transfer_pack.quantity = (peel_avail.avail[0].quantity - loop) + 1;
+      // nope, the loop counts downward now, so it's once again just loop
       transfer_pack.quantity = loop;
       transfer_pack.value = peel_avail.avail[0].value;
 
@@ -2135,6 +2259,10 @@ function magic_happens_here(ca)
       // make sure the value of that new thing doesn't already disqualify it,
       // and if it does, then even more of this same new thing would be even
       // worse
+/*******
+      // nope -- this part assumed counting upward and caused some sets to
+      // be skipped when counting downward... this logic is now done outside
+      // of this loop
       if(importance.best_exact_collect != null)
       {
         if(importance.best_exact_collect.coll_value() <
@@ -2145,6 +2273,7 @@ function magic_happens_here(ca)
         if(importance.best_over_collect.coll_value() <
           next_collect.coll_value()) break;
       }
+*******/
 
       // set next_collect's avail to the peel one (for the moment)
       next_collect.steal_an_avail(peel_avail);
@@ -2157,6 +2286,9 @@ function magic_happens_here(ca)
 
       // it's all ready! send it off to... another of this!
       magic_happens_here(next_collect);
+
+      // make sure we haven't been told to heck out
+      if(run_state != RUN_NORMAL) return;
     }
 
     // now that we've sent all possibilities of 1 to quantity of that avail
@@ -2652,19 +2784,273 @@ function show_inputs()
 
 function best_under_remove()
 {
-  alert("Sorry, this button doesn\'t work yet.");
+  take_this_stuff_out(importance.best_under_collect);
 }
 
 
 function best_over_remove()
 {
-  alert("This button coming early 2013!");
+  take_this_stuff_out(importance.best_over_collect);
 }
 
 
 function best_exact_remove()
 {
-  alert("This button will work soon.");
+  take_this_stuff_out(importance.best_exact_collect);
+}
+
+
+// all those buttons could use a convenient single interface to do their stuff
+function take_this_stuff_out(hitlist_ca)
+{
+  if(hitlist_ca == null) return;
+
+  document.getElementById("under_remove_button").setAttribute("disabled", "");
+  document.getElementById("over_remove_button").setAttribute("disabled", "");
+  document.getElementById("exact_remove_button").setAttribute("disabled", "");
+
+  var ray;
+  var loop;
+  var oloop;
+
+  for(oloop = 0; oloop < hitlist_ca.collect.length; ++oloop)
+  {
+    ray = importance.items_lookup(hitlist_ca.collect[oloop].index,
+      hitlist_ca.collect[oloop].quantity);
+    for(loop = 0; loop < ray.length; ++loop)
+    {
+      display_container.items[ray[loop].index].quantity -= ray[loop].quantity;
+    }
+  }
+
+  // forward or backward?  forward is trickier, but more fun; forward it is
+  loop = 0;
+  while(loop < display_container.items.length)
+  {
+    if(display_container.items[loop].quantity > 0)
+    {
+      // no pruning needed; just advance
+      ++loop;
+    }
+    else
+    {
+      // prune, and instead of advancing, let the list retreat back to us
+      display_container.items.splice(loop, 1);
+    }
+  }
+
+  show_inputs();
+  display_redraw();
+
+  // display_redraw doesn't call summary_redraw (which calls secret_write)
+  // if the set is empty
+  secret_write();
+}
+
+
+function show_secret()
+{
+  document.getElementById("secret_part_1").setAttribute("hidden", "");
+  document.getElementById("secret_part_2").removeAttribute("hidden");
+}
+
+
+function hide_secret()
+{
+  document.getElementById("secret_part_2").setAttribute("hidden", "");
+  document.getElementById("secret_part_1").removeAttribute("hidden");
+}
+
+
+function secret_load()
+{
+  var useful_string;
+  var stubby;
+  var ref;
+  var num;
+  var spot = 0;
+  var it;
+
+  var tv_ref = document.getElementById("target_value_input");
+  var mode_ref = document.getElementById("search_mode_select");
+  ref = document.getElementById("secret_text");
+
+  if((ref == null) || (tv_ref == null) || (mode_ref == null))
+  {
+    alert("secrets kept");
+    return;
+  }
+
+  useful_string = ref.value;
+
+  num = useful_string.indexOf("\n", spot);
+  if(num <= spot) return;
+  stubby = useful_string.substring(spot, num).trim();
+  spot = num + 1;
+  num = Number(stubby);
+  if(isNaN(num)) return;
+  if(Math.round(num) != num) return;
+  if(num < 1) return;
+  tv_ref.value = num;
+
+  num = useful_string.indexOf("\n", spot);
+  if(num <= spot)
+  {
+    display_redraw();
+    return;
+  }
+  stubby = useful_string.substring(spot, num).trim();
+  spot = num + 1;
+  num = Number(stubby);
+  if(isNaN(num))
+  {
+    display_redraw();
+    return;
+  }
+  if(Math.round(num) != num)
+  {
+    display_redraw();
+    return;
+  }
+  if(num < 0)
+  {
+    display_redraw();
+    return;
+  }
+  if(num >= mode_ref.length)
+  {
+    display_redraw();
+    return;
+  }
+  mode_ref.selectedIndex = num;
+
+  display_container.items.length = 0;
+  it = new item_entry();
+
+  while(true)
+  {
+    // quantity value weight priority enabled name
+    // (newline)
+
+    num = useful_string.indexOf(" ", spot);
+    if(num <= spot) break;
+    stubby = useful_string.substring(spot, num).trim();
+    spot = num + 1;
+    num = Number(stubby);
+    if(isNaN(num)) break;
+    if(Math.round(num) != num) break;
+    if(num < 1) break;
+    it.quantity = num;
+
+    num = useful_string.indexOf(" ", spot);
+    if(num <= spot) break;
+    stubby = useful_string.substring(spot, num).trim();
+    spot = num + 1;
+    num = Number(stubby);
+    if(isNaN(num)) break;
+    if(Math.round(num) != num) break;
+    if(num < 1) break;
+    it.value = num;
+
+    num = useful_string.indexOf(" ", spot);
+    if(num <= spot) break;
+    stubby = useful_string.substring(spot, num).trim();
+    spot = num + 1;
+    num = Number(stubby);
+    if(isNaN(num)) break;
+    if(num < 0) break;
+    it.weight = num;
+
+    num = useful_string.indexOf(" ", spot);
+    if(num <= spot) break;
+    stubby = useful_string.substring(spot, num).trim();
+    spot = num + 1;
+    num = Number(stubby);
+    if(isNaN(num)) break;
+    if(Math.round(num) != num) break;
+    if(num < 1) break;
+    it.priority = num;
+
+    num = useful_string.indexOf(" ", spot);
+    if(num <= spot) break;
+    stubby = useful_string.substring(spot, num).trim();
+    spot = num + 1;
+    num = Number(stubby);
+    if(isNaN(num)) break;
+    if(Math.round(num) != num) break;
+    if((num < 0) || (num > 1)) break;
+    if(num == 1) it.enabled = true;
+    else it.enabled = false;
+
+    num = useful_string.indexOf("\n", spot);
+    if(num <= spot) stubby = useful_string.substring(spot).trim();
+    else stubby = useful_string.substring(spot, num).trim();
+    spot = num + 1;
+    if(stubby.length <= 0) break;
+    it.name = stubby;
+
+    display_container.insert(it);
+  }
+
+  // display_redraw();
+  // search_mode_change() includes a display_redraw()
+  search_mode_change();
+}
+
+
+function secret_write()
+{
+  var tv_ref = document.getElementById("target_value_input");
+  var mode_ref = document.getElementById("search_mode_select");
+  var output_ref = document.getElementById("secret_text");
+
+  var useful_string;
+  var loop;
+
+  if((output_ref == null) || (tv_ref == null) || (mode_ref == null))
+  {
+    return;
+  }
+
+  if(isNaN(tv_ref.value)) return;
+  if(Math.round(tv_ref.value) != tv_ref.value) return;
+  if(tv_ref.value < 1) return;
+
+  if((mode_ref.selectedIndex < 0) || (mode_ref.selectedInded > 4)) return;
+
+  useful_string = "";
+  useful_string += tv_ref.value;
+  useful_string += "\n";
+
+  useful_string += mode_ref.selectedIndex;
+  useful_string += "\n";
+
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    // quantity value weight priority enabled name
+    // (newline)
+
+    useful_string += display_container.items[loop].quantity;
+    useful_string += " ";
+
+    useful_string += display_container.items[loop].value;
+    useful_string += " ";
+
+    useful_string += display_container.items[loop].weight.toFixed(2);
+    useful_string += " ";
+
+    useful_string += display_container.items[loop].priority;
+    useful_string += " ";
+
+    if(display_container.items[loop].enabled) useful_string += "1";
+    else useful_string += "0";
+    useful_string += " ";
+
+    useful_string += display_container.items[loop].name;
+    useful_string += "\n";
+  }
+
+  output_ref.value = useful_string;
 }
 
 
@@ -2717,7 +3103,7 @@ Add an item:<br>
   </tr>
   <tr id = "weight_row" hidden>
     <td style = "text-align:right">Weight:</td>
-    <td><input id = "weight_input_new" type = "number" min = "0" value = "0" step = "0.05"></td>
+    <td><input id = "weight_input_new" type = "number" min = "0" value = "0" step = "0.01"></td>
   </tr>
   <tr id = "priority_row" hidden>
     <td style = "text-align:right">Priority:</td>
@@ -2747,6 +3133,28 @@ Priority Control Gizmo: <button onclick = "gizmo_adjust(1)">+1</button> /
 
 <div id = "inputs_summary_div"></div>
 
+<div>
+  <div id = "secret_part_1">
+    <button onclick = "show_secret()">
+      Show the secret advanced input/output gadget that is currently hidden so that you don't break something.
+    </button>
+  </div>
+  <div id = "secret_part_2" hidden>
+    <button onclick = "hide_secret()">
+      Hide the secret advanced input/output gadget so that you don't break something.
+    </button>
+    <table style = "border:1px solid black">
+      <tr>
+        <td>
+          <textarea id = "secret_text" rows = "20" cols = "60"></textarea>
+          <br>
+          <button onclick = "secret_load()">Load from this text</button>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
 <br>
 <button onclick = "off_we_go()">Start the search!</button>
 <br><br>
@@ -2756,8 +3164,7 @@ Show the most recent results.</button>
 
 
 <div id = "outputs_div" hidden>
-Results!<br>
-  <button onclick = "show_inputs()">
+  Results! <button onclick = "show_inputs()">
     Back to inputs (results will still be here if needed).
   </button>
   <div id = "how_did_we_do"></div>
