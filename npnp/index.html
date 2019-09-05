@@ -11,6 +11,8 @@ Reached Early-Access alpha August 26, 2019
 
 Beta release August 29, 2019
 
+2019/09/05: Interface and speed improvements, plus a heckpile more current,
+deprecated, and fictional currency symbols.
 -->
 
 <head>
@@ -38,12 +40,29 @@ var SEARCH_PRI = 3;
 
 var search_mode = SEARCH_FAST;
 
+
 var RUN_NORMAL = 0;
 var RUN_HALT_SUCCESS = 1;
 var RUN_HALT_TIMEOUT = 2;
 var RUN_HALT_ERROR = 3;  // that's on me if so
 
 var run_state = RUN_NORMAL;
+
+
+var SORT_NAME = 0;
+var SORT_QTY = 1;
+var SORT_VALUE = 2;
+var SORT_WEIGHT = 3;
+var SORT_PRI = 4;
+var SORT_ENABLED = 5;
+
+
+var NAME_SIZE = "24";
+
+
+var ENABLE_ALL = 0;
+var ENABLE_NONE = 1;
+var ENABLE_INVERT = 2;
 
 
 function dollary_update()
@@ -153,6 +172,9 @@ function collection_display_object()
     if(typeof(name) !== typeof("")) return -1;
 
     var loop;  // doesn't need to be any more sophisticated for a display ver
+    // and now that it's no longer sorted by name, it shouldn't be
+    // (or at least not unless it gets bonkers complex)
+
     for(loop = 0; loop < this.items.length; ++loop)
     {
       if(this.items[loop].name === name) return loop;
@@ -177,8 +199,10 @@ function collection_display_object()
   this.insert = function(thing)
   {
     if(this.find(thing.name) !== -1) return;
-    this.items.push(thing.new_copy());
-    this.sort_by_name();
+    // this.items.push(thing.new_copy());
+    // this.sort_by_name();
+    // it now goes on the front, so that you can see it from the insert controls
+    this.items.unshift(thing.new_copy());
   }
 
   // modify the name of a given entry; re-sorts itself afterwards
@@ -190,7 +214,137 @@ function collection_display_object()
     if(index < 0) return;
     if(index >= this.items.length) return;
     this.items[index].name = new_name;
-    this.sort_by_name();
+    // this.sort_by_name();  // arbitrary order now allowed
+  }
+
+  this.sort_by_stuff = function(how, backwards)
+  {
+    if(typeof(how) !== typeof(SORT_NAME)) return;
+    if(typeof(backwards) !== typeof(false)) return;
+
+    if(how == SORT_NAME)
+    {
+      if(backwards)
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.name > b.name) return -1;
+          if(a.name < b.name) return 1;
+          return 0;
+        });
+      }
+      else this.sort_by_name();  // may as well since I already wrote that
+    }
+    else if(how == SORT_QTY)
+    {
+      if(backwards)
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.quantity > b.quantity) return -1;
+          if(a.quantity < b.quantity) return 1;
+          return 0;
+        });
+      }
+      else
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.quantity < b.quantity) return -1;
+          if(a.quantity > b.quantity) return 1;
+          return 0;
+        });
+      }
+    }
+    else if(how == SORT_VALUE)
+    {
+      if(backwards)
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.value > b.value) return -1;
+          if(a.value < b.value) return 1;
+          return 0;
+        });
+      }
+      else
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.value < b.value) return -1;
+          if(a.value > b.value) return 1;
+          return 0;
+        });
+      }
+    }
+    else if(how == SORT_WEIGHT)
+    {
+      if(backwards)
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.weight > b.weight) return -1;
+          if(a.weight < b.weight) return 1;
+          return 0;
+        });
+      }
+      else
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.weight < b.weight) return -1;
+          if(a.weight > b.weight) return 1;
+          return 0;
+        });
+      }
+    }
+    else if(how == SORT_PRI)
+    {
+      if(backwards)
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.priority > b.priority) return -1;
+          if(a.priority < b.priority) return 1;
+          return 0;
+        });
+      }
+      else
+      {
+        this.items.sort(function(a, b)
+        {
+          if(a.priority < b.priority) return -1;
+          if(a.priority > b.priority) return 1;
+          return 0;
+        });
+      }
+    }
+    else if(how == SORT_ENABLED)
+    {
+      if(backwards)
+      {
+        this.items.sort(function(a, b)
+        {
+          if((!(a.enabled)) && (b.enabled)) return -1;
+          if((a.enabled) && (!(b.enabled))) return 1;
+          return 0;
+        });
+      }
+      else
+      {
+        this.items.sort(function(a, b)
+        {
+          if((a.enabled) && (!(b.enabled))) return -1;
+          if((!(a.enabled)) && (b.enabled)) return 1;
+          return 0;
+        });
+      }
+    }
+    else
+    {
+      alert("bad sort method");
+      return;
+    }
   }
 }
 
@@ -200,15 +354,20 @@ var display_container = new collection_display_object();
 
 function add_button()
 {
+  var useful_string;
+  var spot;
+
   var insert_item = new item_entry();
   var qty_ref = document.getElementById("quantity_input_new");
   var name_ref = document.getElementById("name_input_new");
   var value_ref = document.getElementById("value_input_new");
   var weight_ref = document.getElementById("weight_input_new");
   var priority_ref = document.getElementById("priority_input_new");
+  var enable_ref = document.getElementById("start_enabled_box");
 
   if((qty_ref == null) || (name_ref == null) || (value_ref == null) ||
-    (weight_ref == null) || (priority_ref == null)) return;
+    (weight_ref == null) || (priority_ref == null) ||
+    (enable_ref == null)) return;
 
   qty_ref.value = (qty_ref.value).trim();
   name_ref.value = (name_ref.value).trim();
@@ -220,13 +379,23 @@ function add_button()
   if(Math.round(qty_ref.value) != qty_ref.value) return;
   if(Number(qty_ref.value) < 1) return;
 
-  if(name_ref.value.length <= 0) return;
-  if(display_container.find(name_ref.value) !== -1)
+  // if(name_ref.value.length <= 0) return;
+  useful_string = name_ref.value.trim();
+  // if(display_container.find(name_ref.value) !== -1)
+  // if(display_container.find(useful_string) !== -1)  // no, not that either
+  spot = display_container.find(useful_string);
+  if(spot != -1)
   {
-    document.getElementById("name_derp").style.backgroundColor = "red";
+    // document.getElementById("name_derp").style.backgroundColor = "red";
+    // new behavior: if it's already in there, add quantity, ignore other fields
+    display_container.items[spot].quantity += Number(qty_ref.value);
+    name_ref.value = "";
+    display_redraw();
+    qty_ref.focus();
+    qty_ref.select();
     return;
   }
-  document.getElementById("name_derp").style.backgroundColor = "initial";
+  // document.getElementById("name_derp").style.backgroundColor = "initial";
 
   if(isNaN(value_ref.value)) return;
   if(Math.round(value_ref.value) != value_ref.value) return;
@@ -242,9 +411,30 @@ function add_button()
   insert_item.quantity = Number(qty_ref.value);
   insert_item.name = name_ref.value;
   insert_item.value = Number(value_ref.value);
-  insert_item.weight = Number(weight_ref.value);
-  insert_item.priority = Number(priority_ref.value);
-  insert_item.enabled = true;
+  if(search_mode == SEARCH_HEAVY)
+  {
+    insert_item.weight = Number(weight_ref.value);
+  }
+  else
+  {
+    insert_item.weight = 0;
+  }
+  if(search_mode == SEARCH_PRI)
+  {
+    insert_item.priority = Number(priority_ref.value);
+  }
+  else
+  {
+    insert_item.priority = 1;
+  }
+  if(enable_ref.checked)
+  {
+    insert_item.enabled = true;
+  }
+  else
+  {
+    insert_item.enabled = false;
+  }
 
   name_ref.value = "";
   display_container.insert(insert_item);
@@ -304,6 +494,22 @@ function display_redraw()
   text_ref = document.createTextNode("Quantity");
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
+
+  // try putting the buttons here
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_qty_a()");
+  text_ref = document.createTextNode("A");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  text_ref = document.createTextNode("/");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_qty_d()");
+  text_ref = document.createTextNode("D");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  // hey that works
+
   row_ref.appendChild(cell_ref);
 
   // name
@@ -312,6 +518,18 @@ function display_redraw()
   object_ref = document.createElement("span");
   object_ref.style.textDecoration = "underline";
   text_ref = document.createTextNode("Name");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_name_a()");
+  text_ref = document.createTextNode("A");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  text_ref = document.createTextNode("/");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_name_d()");
+  text_ref = document.createTextNode("D");
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
   row_ref.appendChild(cell_ref);
@@ -324,6 +542,18 @@ function display_redraw()
   text_ref = document.createTextNode("Value");
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_value_a()");
+  text_ref = document.createTextNode("A");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  text_ref = document.createTextNode("/");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_value_d()");
+  text_ref = document.createTextNode("D");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
   row_ref.appendChild(cell_ref);
 
   // heavy mode only: weight
@@ -334,6 +564,18 @@ function display_redraw()
     object_ref = document.createElement("span");
     object_ref.style.textDecoration = "underline";
     text_ref = document.createTextNode("Weight");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("button");
+    object_ref.setAttribute("onclick", "sort_weight_a()");
+    text_ref = document.createTextNode("A");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    text_ref = document.createTextNode("/");
+    cell_ref.appendChild(text_ref);
+    object_ref = document.createElement("button");
+    object_ref.setAttribute("onclick", "sort_weight_d()");
+    text_ref = document.createTextNode("D");
     object_ref.appendChild(text_ref);
     cell_ref.appendChild(object_ref);
     row_ref.appendChild(cell_ref);
@@ -397,12 +639,38 @@ function display_redraw()
     text_ref = document.createTextNode("Priority");
     object_ref.appendChild(text_ref);
     cell_ref.appendChild(object_ref);
+    object_ref = document.createElement("button");
+    object_ref.setAttribute("onclick", "sort_pri_a()");
+    text_ref = document.createTextNode("A");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
+    text_ref = document.createTextNode("/");
+    cell_ref.appendChild(text_ref);
+    object_ref = document.createElement("button");
+    object_ref.setAttribute("onclick", "sort_pri_d()");
+    text_ref = document.createTextNode("D");
+    object_ref.appendChild(text_ref);
+    cell_ref.appendChild(object_ref);
     row_ref.appendChild(cell_ref);
   }
 
   // enabled?
   cell_ref = document.createElement("td");
   cell_ref.setAttribute("class", "headerific");
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_enabled_y()");
+  text_ref = document.createTextNode("Y");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  text_ref = document.createTextNode("/");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("button");
+  object_ref.setAttribute("onclick", "sort_enabled_n()");
+  text_ref = document.createTextNode("N");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("br");
+  cell_ref.appendChild(object_ref);
   object_ref = document.createElement("span");
   object_ref.style.textDecoration = "underline";
   object_ref.setAttribute("title", "Only enabled items will be considered for the search.");
@@ -459,7 +727,7 @@ function display_redraw()
     object_ref = document.createElement("input");
     object_ref.style.textDecoration = "inherit";
     object_ref.setAttribute("type", "text");
-    object_ref.setAttribute("size", "40");
+    object_ref.setAttribute("size", NAME_SIZE);
     object_ref.setAttribute("value", display_container.items[loop].name);
     useful_string = "name_change(";
     useful_string += loop;
@@ -488,9 +756,12 @@ function display_redraw()
     useful_string += loop;
     useful_string += ", this)";
     object_ref.setAttribute("onchange", useful_string);
-    useful_string = "";
-    useful_string += (loop + 1);
-    object_ref.setAttribute("tabindex", useful_string);
+    // useful_string = "";
+    // useful_string += (loop + 1);
+    // object_ref.setAttribute("tabindex", useful_string);
+    // tab index order by class name now... and
+    // weight and priority get to play now too!
+    object_ref.className = "tab_order_val";
     cell_ref.appendChild(object_ref);
     row_ref.appendChild(cell_ref);
 
@@ -504,7 +775,8 @@ function display_redraw()
       object_ref.style.textAlign = "right";
       object_ref.setAttribute("type", "number");
       object_ref.setAttribute("min", "0");
-      object_ref.setAttribute("step", "0.05");
+      object_ref.setAttribute("step", "0.01");
+      object_ref.className = "tab_order_weight";
       useful_string = "";
       useful_string += display_container.items[loop].weight;
       object_ref.setAttribute("value", useful_string);
@@ -577,6 +849,7 @@ function display_redraw()
       object_ref.setAttribute("type", "number");
       object_ref.setAttribute("min", "1");
       object_ref.setAttribute("step", "1");
+      object_ref.className = "tab_order_pri";
       useful_string = "";
       useful_string += display_container.items[loop].priority;
       object_ref.setAttribute("value", useful_string);
@@ -604,7 +877,120 @@ function display_redraw()
     table_ref.appendChild(row_ref);
   }
 
+  // some enable controls in a new row at the bottom
+  row_ref = document.createElement("tr");
+
+  // remove button column
+  cell_ref = document.createElement("td");
+  cell_ref.style.verticalAlign = "bottom";
+  object_ref = document.createElement("button");
+  text_ref = document.createTextNode("Remove");
+  object_ref.appendChild(text_ref);
+  text_ref = document.createElement("br");
+  object_ref.appendChild(text_ref);
+  text_ref = document.createTextNode("ALL");
+  object_ref.appendChild(text_ref);
+  object_ref.setAttribute("onclick", "remove_all()");
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
+  // quantity
+  cell_ref = document.createElement("td");
+  row_ref.appendChild(cell_ref);
+
+  // name
+  cell_ref = document.createElement("td");
+  row_ref.appendChild(cell_ref);
+
+  // value
+  cell_ref = document.createElement("td");
+  row_ref.appendChild(cell_ref);
+
+  if(search_mode == SEARCH_HEAVY)
+  {
+    // weight
+    cell_ref = document.createElement("td");
+    row_ref.appendChild(cell_ref);
+  }
+
+  // stack value
+  cell_ref = document.createElement("td");
+  row_ref.appendChild(cell_ref);
+
+  if(search_mode == SEARCH_HEAVY)
+  {
+    // stack weight
+    cell_ref = document.createElement("td");
+    row_ref.appendChild(cell_ref);
+    // value per weight
+    cell_ref = document.createElement("td");
+    row_ref.appendChild(cell_ref);
+  }
+  else if(search_mode == SEARCH_PRI)
+  {
+    // priority
+    cell_ref = document.createElement("td");
+    row_ref.appendChild(cell_ref);
+  }
+
+  // and finally
+  cell_ref = document.createElement("td");
+  cell_ref.style.textAlign = "center";
+  object_ref = document.createElement("button");
+  useful_string = "enable_buttons(";
+  useful_string += ENABLE_ALL;
+  useful_string += ")";
+  object_ref.setAttribute("onclick", useful_string);
+  text_ref = document.createTextNode("All");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("br");
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("button");
+  useful_string = "enable_buttons(";
+  useful_string += ENABLE_NONE;
+  useful_string += ")";
+  object_ref.setAttribute("onclick", useful_string);
+  text_ref = document.createTextNode("None");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("br");
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("button");
+  useful_string = "enable_buttons(";
+  useful_string += ENABLE_INVERT;
+  useful_string += ")";
+  object_ref.setAttribute("onclick", useful_string);
+  text_ref = document.createTextNode("Invert");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+
+  row_ref.appendChild(cell_ref);
+
+  table_ref.appendChild(row_ref);
+
   big_ref.appendChild(table_ref);
+
+  var tab_order_count = 0;
+  var class_list;
+  class_list = document.getElementsByClassName("tab_order_val");
+  for(loop = 0; loop < class_list.length; ++loop)
+  {
+    ++tab_order_count;
+    class_list[loop].setAttribute("tabindex", tab_order_count);
+  }
+  class_list = document.getElementsByClassName("tab_order_weight");
+  for(loop = 0; loop < class_list.length; ++loop)
+  {
+    ++tab_order_count;
+    class_list[loop].setAttribute("tabindex", tab_order_count);
+  }
+  class_list = document.getElementsByClassName("tab_order_pri");
+  for(loop = 0; loop < class_list.length; ++loop)
+  {
+    ++tab_order_count;
+    class_list[loop].setAttribute("tabindex", tab_order_count);
+  }
 
   // now I need a summary... but first I need that priority control gizmo
   // ok the priority control gizmo is in so here's this now
@@ -659,7 +1045,8 @@ function qty_change(index, ref)
   }
 
   display_container.items[numberdx].quantity = numval;
-  display_redraw();
+  // display_redraw();
+  row_redraw(numberdx, ref);
 }
 
 
@@ -677,15 +1064,15 @@ function name_change(index, ref)
   // the input to the stored name, and return
   if(display_container.find(ref.value) != -1)
   {
-    document.getElementById("name_derp").style.backgroundColor = "red";
+    // document.getElementById("name_derp").style.backgroundColor = "red";
     ref.value = display_container.items[numberdx].name;
     return;
   }
 
   // I guess we're good... remember to sort on the way out
   display_container.items[numberdx].name = ref.value;
-  display_container.sort_by_name();
-  display_redraw();
+  // display_container.sort_by_name();  // we don't sort all the time any more
+  // display_redraw();  // don't even need any redraw
 }
 
 
@@ -708,19 +1095,20 @@ function value_change(index, ref)
 
   display_container.items[ndx].value = numval;
   // display_redraw();  // can't do that much... try just the row
-  row_redraw(ndx, ref);
+  row_redraw(ndx, ref);  // oh good I already use row instead of display here
 }
 
 
 function row_redraw(index, ref)
 {
+  var useful_string;
   var ndx = index_validate(index);
   if(ndx < 0) return;
 
   var up_ref;
-  var saved_tab_index;
+  // var saved_tab_index;
 
-  saved_tab_index = ref.tabIndex;
+  // saved_tab_index = ref.tabIndex;
   up_ref = ref;
 
   // go up until we find a <tr> tag, in upper case
@@ -730,6 +1118,7 @@ function row_redraw(index, ref)
     if(up_ref == null) return;
   }
 
+/*******  // doing this less destructively now
   // clear it out
   while(up_ref.hasChildNodes())
   {
@@ -777,7 +1166,7 @@ function row_redraw(index, ref)
   object_ref = document.createElement("input");
   object_ref.style.textDecoration = "inherit";
   object_ref.setAttribute("type", "text");
-  object_ref.setAttribute("size", "40");
+  object_ref.setAttribute("size", NAME_SIZE);
   object_ref.setAttribute("value", display_container.items[ndx].name);
   useful_string = "name_change(";
   useful_string += ndx;
@@ -915,6 +1304,74 @@ function row_redraw(index, ref)
   object_ref.setAttribute("onchange", useful_string);
   cell_ref.appendChild(object_ref);
   row_ref.appendChild(cell_ref);
+*******/
+
+  // so let's start this over again... up_ref is now the tr
+
+  // var cell_ref;
+  var object_ref;
+  var text_ref;
+
+  if((search_mode == SEARCH_FAST) || (search_mode == SEARCH_FEW))
+  {
+    if(up_ref.children.length !== 6) return;
+  }
+  else if(search_mode == SEARCH_HEAVY)
+  {
+    if(up_ref.children.length !== 9) return;
+  }
+  else if(search_mode == SEARCH_PRI)
+  {
+    if(up_ref.children.length !== 7) return;
+  }
+  else return;
+
+  // in all but weight, the only one to update is stack value, at index 4
+  if(search_mode != SEARCH_HEAVY)
+  {
+    clear_ref(up_ref.children[4]);
+    object_ref = document.createElement("span");
+    object_ref.className = "dollardingy";
+    up_ref.children[4].appendChild(object_ref);
+    useful_string = "";
+    useful_string += (display_container.items[ndx].quantity *
+      display_container.items[ndx].value);
+    text_ref = document.createTextNode(useful_string);
+    up_ref.children[4].appendChild(text_ref);
+  }
+  else
+  {
+    // guess it is weight, then -- so that's stack value at 5, stack weight
+    // at 6, and vpw at 7
+    clear_ref(up_ref.children[5]);
+    object_ref = document.createElement("span");
+    object_ref.className = "dollardingy";
+    up_ref.children[5].appendChild(object_ref);
+    useful_string = "";
+    useful_string += (display_container.items[ndx].quantity *
+      display_container.items[ndx].value);
+    text_ref = document.createTextNode(useful_string);
+    up_ref.children[5].appendChild(text_ref);
+
+    clear_ref(up_ref.children[6]);
+    useful_string = Number(display_container.items[ndx].quantity *
+      display_container.items[ndx].weight).toFixed(2);
+    text_ref = document.createTextNode(useful_string);
+    up_ref.children[6].appendChild(text_ref);
+
+    clear_ref(up_ref.children[7]);
+    if(display_container.items[ndx].weight == 0)
+    {
+      text_ref = document.createTextNode("n/a");
+    }
+    else
+    {
+      useful_string = Number(display_container.items[ndx].value /
+        display_container.items[ndx].weight).toFixed(2);
+      text_ref = document.createTextNode(useful_string);
+    }
+    up_ref.children[7].appendChild(text_ref);
+  }
 
   // prices have changed; summary likely will have too
   summary_redraw();
@@ -942,7 +1399,8 @@ function weight_change(index, ref)
   }
 
   display_container.items[ndx].weight = numval;
-  display_redraw();
+  // display_redraw();
+  row_redraw(ndx, ref);
 }
 
 
@@ -2018,6 +2476,11 @@ function magic_happens_here(ca)
   var qty_top;
   var limit_val;
 
+  var num_items_still_allowed;
+  var value_gap_to_cover;
+  var avail_walk;
+  var how_many_from_this_bucket;
+
   // few easy checks first
   if(run_state != RUN_NORMAL) return;
 
@@ -2028,61 +2491,7 @@ function magic_happens_here(ca)
     if(run_state == RUN_NORMAL) run_state = RUN_HALT_TIMEOUT;
     return;
   }
-  time_now = 0;
-
-/*******
-  // ----------------
-  // DEBUG -- check to make sure that no price level appears in both
-  // collect and avail
-  var c_walk = 0;
-  var a_walk = 0;
-  var c_lastval = -1;
-  var a_lastval = -1;
-  var lurt_string;
-  while((c_walk < ca.collect.length) && (a_walk < ca.avail.length))
-  {
-    if(c_lastval != -1)
-    {
-      if(ca.collect[c_walk].value >= c_lastval)
-      {
-        alert("it turns out values aren\'t sorted in collects");
-      }
-    }
-    if(a_lastval != -1)
-    {
-      if(ca.avail[a_walk].value >= a_lastval)
-      {
-        alert("it turns out values aren\'t sorted in avails");
-      }
-    }
-
-    if(ca.collect[c_walk].value > ca.avail[a_walk].value)
-    {
-      // advance c_walk
-      c_lastval = ca.collect[c_walk].value;
-      ++c_walk;
-    }
-    else if(ca.collect[c_walk].value < ca.avail[a_walk].value)
-    {
-      // advance a_walk
-      a_lastval = ca.avail[a_walk].value
-      ++a_walk;
-    }
-    else if(ca.collect[c_walk].value == ca.avail[a_walk].value)
-    {
-      lurt_string = "oh no!  same value ($";
-      lurt_string += ca.collect[c_walk].value;
-      lurt_string += ") found in both collect and avail!";
-      alert(lurt_string);
-    }
-    else
-    {
-      alert("heckwut");
-    }
-  }
-  // DEBUG END
-  // ----------------
-*******/
+  time_now = null;
 
   // now some harder checks, including possible paperwork
   if(ca.coll_value() < importance.target_value)
@@ -2098,10 +2507,7 @@ function magic_happens_here(ca)
 
     // check whether it is worthwhile to continue
 
-    // I forgot plain checking values to see whether it can reach at least a
-    // new best under, but I'll leave that until I've solved this weight thing
-    // okay here it is anyway since it could speed up looking for this weight
-    // thing
+    // can it reach at least a new best under?
     if(importance.best_exact_collect != null)
     {
       if((ca.coll_value() + ca.avail_value()) < importance.target_value)
@@ -2125,6 +2531,48 @@ function magic_happens_here(ca)
         if(ca.coll_count() >= importance.best_exact_collect.coll_count())
         {
           return;
+        }
+
+        // another check -- can it reach target value within however many more
+        // items are still allowed?
+        num_items_still_allowed = (importance.best_exact_collect.coll_count() -
+          ca.coll_count()) - 1;  // one less since a tie is no better
+        // and given that a tie is no better and that we're looking at a set
+        // worth less than target, if we're one item less than best collect
+        // already it's not worth continuing this branch
+        if(num_items_still_allowed <= 0)
+        {
+          return;
+        }
+        value_gap_to_cover = (importance.best_exact_collect.coll_value() -
+          ca.coll_value());
+        // start looking at the front of avail since those are the most
+        // expensive items
+        for(avail_walk = 0; avail_walk < ca.avail.length; ++avail_walk)
+        {
+          if(ca.avail[avail_walk].quantity >= num_items_still_allowed)
+          {
+            how_many_from_this_bucket = num_items_still_allowed;
+          }
+          else
+          {
+            how_many_from_this_bucket = ca.avail[avail_walk].quantity;
+          }
+          value_gap_to_cover -= (how_many_from_this_bucket *
+            ca.avail[avail_walk].value);
+          if(value_gap_to_cover <= 0)
+          {
+            // success!  stop looking through here and continue with the rest
+            // of this function
+            break;
+          }
+          // didn't make it there this time... can we still proceed?
+          num_items_still_allowed -= how_many_from_this_bucket;
+          if(num_items_still_allowed <= 0)
+          {
+            // failure -- prune this branch
+            return;
+          }
         }
       }
       else if(search_mode == SEARCH_HEAVY)
@@ -3054,6 +3502,449 @@ function secret_write()
 }
 
 
+function npnp2pnp()
+{
+  var ref = document.getElementById("pnp");
+  var tv_ref = document.getElementById("target_value_input");
+  if((ref == null) || (tv_ref == null)) return;
+
+  var tv = Number(tv_ref.value);
+  if(isNaN(tv)) return;
+  if(Math.round(tv) !== tv) return;
+  if(tv < 1) return;
+
+  var useful_string;
+  var loop;
+
+  useful_string = "2\n";
+  useful_string += tv;
+  useful_string += "\n3\n";
+  if(search_mode == SEARCH_FAST) useful_string += "1";
+  else if(search_mode == SEARCH_FEW) useful_string += "5";
+  else if(search_mode == SEARCH_HEAVY) useful_string += "2";
+  else if(search_mode == SEARCH_PRI) useful_string += "3";
+  else return;
+
+  useful_string += "\n4\n";
+
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    if(!(display_container.items[loop].enabled)) continue;
+
+    useful_string += display_container.items[loop].name;
+    useful_string += "\n";
+    useful_string += display_container.items[loop].value;
+    useful_string += "\n";
+    if(search_mode == SEARCH_HEAVY)
+    {
+      useful_string += display_container.items[loop].weight;
+      useful_string += "\n";
+    }
+    else if(search_mode == SEARCH_PRI)
+    {
+      // I could do a pseudo-npnp priority search in pnp with properly selected
+      // item weights, but I'll just stick with 1 == yes; >1 == no for now
+      if(display_container.items[loop].priority == 1) useful_string += "y";
+      else useful_string += "n";
+      useful_string += "\n";
+    }
+    useful_string += display_container.items[loop].quantity;
+    useful_string += "\n";
+  }
+
+  ref.value = useful_string;
+}
+
+
+function priority_flip()
+{
+  var old_ray = [];
+  var new_ray = [];
+
+  var loop;
+  var spot;
+
+  // fill
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    old_ray.push(display_container.items[loop].priority);
+  }
+
+  // sort
+  old_ray.sort(function(a, b)
+  {
+    return (Number(a) - Number(b));
+  });
+
+  // squish
+  loop = 1;
+  while(loop < old_ray.length)
+  {
+    if(old_ray[loop] == old_ray[loop - 1])
+    {
+      old_ray.splice(loop, 1);
+    }
+    else
+    {
+      ++loop;
+    }
+  }
+
+  // copy
+  for(loop = 0; loop < old_ray.length; ++loop)
+  {
+    new_ray.push(old_ray[loop]);
+  }
+
+  // flip
+  new_ray.reverse();
+
+  // paperwork
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    spot = old_ray.indexOf(display_container.items[loop].priority);
+    if(spot < 0) continue;
+    if(spot >= new_ray.length) continue;
+    display_container.items[loop].priority = new_ray[spot];
+  }
+
+  display_redraw();
+}
+
+
+function sort_qty_a()
+{
+  display_container.sort_by_stuff(SORT_QTY, false);
+  display_redraw();
+}
+
+function sort_qty_d()
+{
+  display_container.sort_by_stuff(SORT_QTY, true);
+  display_redraw();
+}
+
+function sort_name_a()
+{
+  display_container.sort_by_stuff(SORT_NAME, false);
+  display_redraw();
+}
+
+function sort_name_d()
+{
+  display_container.sort_by_stuff(SORT_NAME, true);
+  display_redraw();
+}
+
+function sort_value_a()
+{
+  display_container.sort_by_stuff(SORT_VALUE, false);
+  display_redraw();
+}
+
+function sort_value_d()
+{
+  display_container.sort_by_stuff(SORT_VALUE, true);
+  display_redraw();
+}
+
+function sort_weight_a()
+{
+  display_container.sort_by_stuff(SORT_WEIGHT, false);
+  display_redraw();
+}
+
+function sort_weight_d()
+{
+  display_container.sort_by_stuff(SORT_WEIGHT, true);
+  display_redraw();
+}
+
+function sort_pri_a()
+{
+  display_container.sort_by_stuff(SORT_PRI, false);
+  display_redraw();
+}
+
+function sort_pri_d()
+{
+  display_container.sort_by_stuff(SORT_PRI, true);
+  display_redraw();
+}
+
+function sort_enabled_y()
+{
+  display_container.sort_by_stuff(SORT_ENABLED, false);
+  display_redraw();
+}
+
+function sort_enabled_n()
+{
+  display_container.sort_by_stuff(SORT_ENABLED, true);
+  display_redraw();
+}
+
+
+function enable_buttons(how)
+{
+  if(typeof(how) !== typeof(ENABLE_ALL)) return;
+
+  var loop;
+
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    if(how == ENABLE_ALL)
+    {
+      display_container.items[loop].enabled = true;
+    }
+    else if(how == ENABLE_NONE)
+    {
+      display_container.items[loop].enabled = false;
+    }
+    else if(how == ENABLE_INVERT)
+    {
+      display_container.items[loop].enabled = !(display_container.items[loop].enabled);
+    }
+    else return;
+  }
+
+  display_redraw();
+}
+
+
+function secret_select(whomst)
+{
+  var ref_sec2 = document.getElementById("secret_part_2");
+  var ref_sec3 = document.getElementById("secret_part_3");
+  if((ref_sec2 == null) || (ref_sec3 == null)) return;
+
+  ref_sec2.setAttribute("hidden", "");
+  ref_sec3.setAttribute("hidden", "");
+
+  if(whomst.selectedIndex == 1)
+  {
+    ref_sec2.removeAttribute("hidden");
+  }
+  else if(whomst.selectedIndex == 2)
+  {
+    ref_sec3.removeAttribute("hidden");
+  }
+}
+
+
+function save_name_change(that)
+{
+  var ref = document.getElementById("set_save_button");
+  if(ref == null) return;
+
+  var useful_string = that.value.trim();
+  if(useful_string.length > 0)
+  {
+    ref.removeAttribute("disabled");
+  }
+  else
+  {
+    ref.setAttribute("disabled", "");
+  }
+}
+
+
+function remove_all()
+{
+  display_container.items.length = 0;
+  display_redraw();
+}
+
+
+// functions and objects for the save/load value sets secret thing
+
+function set_item()
+{
+  this.name = "";
+  this.value = 0;
+
+  this.new_copy = function()
+  {
+    var copy_item = new set_item();
+    copy_item.name = this.name;
+    copy_item.value = this.value;
+    return copy_item;
+  }
+}
+
+// then an array of those with a name attached
+function set_list()
+{
+  this.list_name = "";
+  this.the_list = [];
+
+  this.new_copy = function()
+  {
+    var loop;
+    var copy_list = new set_list();
+    copy_list.list_name = this.list_name;
+    for(loop = 0; loop < this.the_list.length; ++loop)
+    {
+      copy_list.the_list.push(this.the_list[loop].new_copy());
+    }
+    return copy_list;
+  }
+
+  // doesn't really need to be sorted or anything so sure I guess that's it
+}
+
+// and a big array of set_list()s with maintenance functions built in
+function set_list_box()
+{
+  this.lists = [];
+
+  this.sort_lists = function()
+  {
+    this.lists.sort(function(a, b)
+    {
+      if(a.list_name < b.list_name) return -1;
+      if(a.list_name > b.list_name) return 1;
+      return 0;
+    });
+  }
+
+  this.find = function(what)  // string representing a set_list()'s list_name
+  {
+    if(typeof(what) !== typeof("")) return -1;
+    // no reason to get complicated
+    var loop;
+    for(loop = 0; loop < this.lists.length; ++loop)
+    {
+      if(this.lists[loop].list_name == what) return loop;
+      if(this.lists[loop].list_name > what) return -1;  // sorted; gone too far
+    }
+
+    return -1;
+  }
+
+  this.insert = function(list_what)  // give it a new set_list()
+  {
+    // see whether to replace an existing list with the same name
+    var spot;
+    spot = this.find(list_what.list_name);
+    if(spot >= 0)
+    {
+      this.lists.splice(spot, 1);
+    }
+    // on goes the new list
+    this.lists.push(list_what.new_copy());
+    // and into its proper place
+    this.sort_lists();
+  }
+
+  this.clear = function()
+  {
+    this.lists.length = 0;
+  }
+}
+
+// instantiate!
+var saved_sets = new set_list_box();
+
+
+// functions for the save/load sets buttons
+
+function save_button_fn()
+{
+  var name_ref = document.getElementById("save_name");
+  var sel_ref = document.getElementById("select_saved_set");
+
+  var obj_ref;
+
+  if((name_ref == null) || (sel_ref == null)) return;
+
+  var useful_string = name_ref.value.trim();
+  if(useful_string.length <= 0) return;
+  if(useful_string == sel_ref.options[0].text) return;
+
+  var insert_list = new set_list();
+  var insert_item = new set_item();
+
+  var loop;
+
+  insert_list.list_name = useful_string;
+
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    insert_item.name = display_container.items[loop].name;
+    insert_item.value = display_container.items[loop].value;
+    insert_list.the_list.push(insert_item.new_copy());
+  }
+
+  saved_sets.insert(insert_list);
+
+  // select object paperwork
+  while(sel_ref.length > 1)
+  {
+    sel_ref.remove(1);
+  }
+
+  for(loop = 0; loop < saved_sets.lists.length; ++loop)
+  {
+    obj_ref = document.createElement("option");
+    obj_ref.text = saved_sets.lists[loop].list_name;
+    sel_ref.add(obj_ref);
+  }
+
+  sel_ref.selectedIndex = 0;
+
+  // more paperwork
+  name_ref.value = "";
+  save_name_change(name_ref);
+}
+
+
+function load_button_fn()
+{
+  var sel_ref = document.getElementById("select_saved_set");
+  var list_spot;
+  var dc_spot;
+  var loop;
+  var useful_string;
+
+  if(sel_ref == null) return;
+  if(sel_ref.selectedIndex == 0) return;
+
+  list_spot = saved_sets.find(sel_ref.value);
+  if(list_spot < 0)
+  {
+    alert("list whoopsy");
+    return;
+  }
+
+  for(loop = 0; loop < saved_sets.lists[list_spot].the_list.length; ++loop)
+  {
+    useful_string = saved_sets.lists[list_spot].the_list[loop].name;
+    // let's see whether that item is currently in the main collection
+    dc_spot = display_container.find(useful_string);
+    if(dc_spot < 0) continue;
+    display_container.items[dc_spot].value =
+      saved_sets.lists[list_spot].the_list[loop].value;
+  }
+
+  sel_ref.selectedIndex = 0;
+  display_redraw();
+}
+
+
+function saved_clear()
+{
+  var sel_ref = document.getElementById("select_saved_set");
+  if(sel_ref == null) return;
+
+  saved_sets.clear();
+  while(sel_ref.length > 1)
+  {
+    sel_ref.remove(1);
+  }
+}
+
+
 </script>
 
 </head>
@@ -3072,22 +3963,66 @@ Settings:<br>
 Target value: <span class = "dollardingy">$</span><input id = "target_value_input" type = "number" value = "1" min = "1" step = "1" onchange = "summary_redraw()"><!--<input id = "target_value_input" type = "number" value = "1" min = "1" step = "1" style = "text-align:right">--><br>
 Search mode: <select id = "search_mode_select" onchange = "search_mode_change()">
   <option title = "Stops search as soon as any match is found.">Fastest match</option>
-  <option title = "Finds the smallest combination of items whose values match the target; tends to select high-valued items and is good for when you will be visiting another merchant to sell what was not sold to this merchant.">Fewest items</option>
-  <option title = "Finds the heaviest combination of items whose values match the target; useful for when you are severely overburdened or when this is the last merchant who will be visited on this trip.">Heaviest match</option>
+  <option selected title = "Finds the smallest combination of items whose values match the target; tends to select high-valued items and is good for when you plan to visit another merchant to sell what was not sold to this merchant.">Fewest items</option>
+  <option title = "Finds the heaviest combination of items whose values match the target; useful for when you are severely overburdened, or when this is the last merchant who will be visited on this trip.">Heaviest match</option>
   <option title = "Allows you to assign items priority ranks; lower values get priority (i.e. items with priority rank 1 are preferred over items with rank 2, etc.); ranks need not be unique; useful when visiting a general-goods merchant to whom you would prefer to sell the items that you cannot sell to other merchants.">Priority mode</option>
 </select> (In all cases a set closer to the target value is chosen over a set further away.)<br>
 Miscellaneous: Currency symbol: <select id = "dollary_select" onchange = "dollary_update()">
   <option>[none]</option>
-  <option selected>$</option>
-  <option>&#162;</option>
-  <option>&#163;</option>
-  <option>&#128;</option>
-  <option>&#165;</option>
+  <option selected title = "Dollars">$</option>
+  <option title = "Cents">&#162;</option>
+  <option title = "Euros">&euro;</option>
+  <option title = "Pounds">&#163;</option>
+  <option title = "Yen">&#165;</option>
+  <option title = "Won">&#8361;</option>
+  <option title = "Shekels">&#8362;</option>
+  <option title = "Rubles">&#8381;</option>
+  <option title = "Rupees, several non-Indian">&#8360;</option>
+  <option title = "Rupees, Indian">&#8377;</option>
+  <option title = "&#273;&#7891;ng">&#8363;</option>
+  <option title = "Kip">&#8365;</option>
+  <option title = "Baht">&#3647;</option>
+  <option title = "Riels">&#6107;</option>
+  <option title = "Hryvni">&#8372;</option>
+  <option title = "Lari">&#8382;</option>
+  <option title = "Tugrik">&#8366;</option>
+  <option title = "Tenge">&#8376;</option>
+  <option title = "Afghanis">&#1547;</option>
+  <option title = "Manat, Azerbaijani">&#8380;</option>
+  <option title = "Guaran&#237;es">&#8370;</option>
+  <option title = "Colones">&#8353;</option>
+  <option title = "Dram">&#1423;</option>
+  <option title = "Lira, Turkish">&#8378;</option>
+  <option title = "Pesos, Philippine">&#8369;</option>
+  <option title = "Cedis">&#8373;</option>
+  <option title = "Naira">&#8358;</option>
+  <option title = "European Currency Units">&#8352;</option>
+  <option title = "Francs">&#8355;</option>
+  <option title = "Deutsche Mark">DM</option>
+  <option title = "Pfennigs">&#8368;</option>
+  <option title = "Pesetas">&#8359;</option>
+  <option title = "Lire">&#8356;</option>
+  <option title = "Drachmas">&#8367;</option>
+  <option title = "Guilders">&#402;</option>
+  <option title = "Cruzeiros">&#8354;</option>
+  <option title = "Australes">&#8371;</option>
+  <option title = "Strange Generic Currency Symbol">&#164;</option>
+  <option title = "This Thing which Is Not Strictly a Currency Symbol but which Looks Like It May as Well Be">&#167;</option>
+  <option title = "Paragraphs, because Why Not">&#182;</option>
+  <option title = "Credits">Cr</option>
+  <option title = "Republic Credits">RCr</option>
+  <option title = "Imperial Credits">ICr</option>
+  <option title = "Gold Pieces">GP</option>
+  <option title = "Septims">Sep</option>
+  <option title = "Bottle Caps">Cap</option>
+  <option title = "Crowns">&#128081;</option>
+  <option title = "Bitcoin">&#8383;</option>
+  <option title = "Dogecoin">&#208;</option>
 </select> || Search time limit: <input id = "time_limit_input" type = "number" min = "5" max = "60" step = "1" value = "10" style = "text-align:right" title = "This sort of search problem can get very big, very quickly.  Set a maximum search time here to keep things resonable.  If the search lasts longer than this, it will end and display the best result it has at that point."> second(s).
 <br><br>
 
 <div id = "inputs_div">
-Add an item:<br>
+Add an item <label>(<input type = "checkbox" id = "start_enabled_box" checked>and enable)</label>:<br>
 <table>
   <tr>
     <td style = "text-align:right">Quantity:</td>
@@ -3095,7 +4030,7 @@ Add an item:<br>
   </tr>
   <tr>
     <td style = "text-align:right">Name:</td>
-    <td><input id = "name_input_new" type = "text" size = "40"> <span id = "name_derp">(Must be unique.)</span></td>
+    <td><input id = "name_input_new" type = "text" size = "40"> <span id = "name_derp" hidden>(Must be unique.)</span></td>
   </tr>
   <tr>
     <td style = "text-align:right">Value:</td>
@@ -3114,6 +4049,11 @@ Add an item:<br>
 
 <br><br>
 
+<button id = "show_results_button" hidden onclick = "show_outputs()">
+Show the most recent results.</button>
+
+<br><br>
+
 Current collection:<span id = "nothing_span"> nothing.</span>
 <div id = "input_summary_tables"></div>
 
@@ -3127,6 +4067,7 @@ Priority Control Gizmo: <button onclick = "gizmo_adjust(1)">+1</button> /
   <option>or below</option>
 </select> rank
 <input id = "gizmo_threshold" type = "number" min = "1" step = "1" value = "1">
+|| <button onclick = "priority_flip()">Flip priorities</button>
 </div>
 
 <br>
@@ -3135,20 +4076,56 @@ Priority Control Gizmo: <button onclick = "gizmo_adjust(1)">+1</button> /
 
 <div>
   <div id = "secret_part_1">
+    <!--
     <button onclick = "show_secret()">
       Show the secret advanced input/output gadget that is currently hidden so that you don't break something.
     </button>
+    -->
+    Secret gadget:
+    <select onchange = "secret_select(this)">
+      <option selected>None so you don't break something</option>
+      <option>Secret text input/output</option>
+      <option>Secret save/restore value sets</option>
+    </select>
   </div>
   <div id = "secret_part_2" hidden>
+    <!--
     <button onclick = "hide_secret()">
       Hide the secret advanced input/output gadget so that you don't break something.
     </button>
+    -->
     <table style = "border:1px solid black">
       <tr>
         <td>
-          <textarea id = "secret_text" rows = "20" cols = "60"></textarea>
+          <textarea id = "secret_text" rows = "15" cols = "40"></textarea>
           <br>
           <button onclick = "secret_load()">Load from this text</button>
+        </td>
+        <td style = "padding-right:0px">
+          <textarea id = "pnp" rows = "15" cols = "40"></textarea>
+          <br>
+          <button onclick = "npnp2pnp()">NPNP to PNP</button>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div id = "secret_part_3" hidden>
+    <table style = "border:1px solid black">
+      <tr>
+        <td style = "padding-right:0px">
+          Reminder: only applies to items currently in the collection.
+          <br><br>
+          <button id = "set_save_button" disabled onclick = "save_button_fn()">
+            Save current value set as:
+          </button>
+          <input type = "text" size = "15" id = "save_name" oninput = "save_name_change(this)">
+          <br><br>
+          <button onclick = "load_button_fn()">Load saved value set:</button>
+          <select id = "select_saved_set">
+            <option>(None)</option>
+          </select>
+          <br><br>
+          <button onclick = "saved_clear()">Clear all saved sets</button>
         </td>
       </tr>
     </table>
@@ -3157,9 +4134,6 @@ Priority Control Gizmo: <button onclick = "gizmo_adjust(1)">+1</button> /
 
 <br>
 <button onclick = "off_we_go()">Start the search!</button>
-<br><br>
-<button id = "show_results_button" hidden onclick = "show_outputs()">
-Show the most recent results.</button>
 </div>
 
 
@@ -3167,6 +4141,7 @@ Show the most recent results.</button>
   Results! <button onclick = "show_inputs()">
     Back to inputs (results will still be here if needed).
   </button>
+  <br><br>
   <div id = "how_did_we_do"></div>
 
   <div id = "best_under_container" hidden>
