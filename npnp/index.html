@@ -13,6 +13,9 @@ Beta release August 29, 2019
 
 2019/09/05: Interface and speed improvements, plus a heckpile more current,
 deprecated, and fictional currency symbols.
+
+2019/09/07: Fixed bug in removing results.
+
 -->
 
 <head>
@@ -1767,6 +1770,13 @@ function important_thing()
 
   this.time_limit = null;
 
+  // arrays of item_entry() objects where only the name and quantity
+  // matter -- for looking up in the main collection when a
+  // remove-these-results button is pressed
+  this.under_log = [];
+  this.over_log = [];
+  this.exact_log = [];
+
   this.reset = function()
   {
     this.value_buckets.length = 0;
@@ -1777,6 +1787,9 @@ function important_thing()
     this.best_under_collect = null;
     this.best_exact_collect = null;
     this.time_limit = null;
+    this.under_log.length = 0;
+    this.over_log.length = 0;
+    this.exact_log.length = 0;
   }
 
   this.fill_the_buckets = function()
@@ -2412,6 +2425,9 @@ function off_we_go()
 
   // over/under or exact?
 
+  // new return from hypertext...(): array of name/quantity item_entry()s
+  var hyperlog;
+
   if(importance.best_exact_collect == null)
   {
     // over/under... even if one or both of those are null, too
@@ -2425,7 +2441,12 @@ function off_we_go()
     }
     else
     {
-      hypertext_the_results(importance.best_under_collect, out_under_res_ref);
+      hyperlog = hypertext_the_results(importance.best_under_collect,
+        out_under_res_ref);
+      for(loop = 0; loop < hyperlog.length; ++loop)
+      {
+        importance.under_log.push(hyperlog[loop].new_copy());
+      }
     }
     if(importance.best_over_collect == null)
     {
@@ -2435,14 +2456,24 @@ function off_we_go()
     }
     else
     {
-      hypertext_the_results(importance.best_over_collect, out_over_res_ref);
+      hyperlog = hypertext_the_results(importance.best_over_collect,
+        out_over_res_ref);
+      for(loop = 0; loop < hyperlog.length; ++loop)
+      {
+        importance.over_log.push(hyperlog[loop].new_copy());
+      }
     }
   }
   else
   {
     // exact!
     out_exact_ref.removeAttribute("hidden");
-    hypertext_the_results(importance.best_exact_collect, out_exact_res_ref);
+    hyperlog = hypertext_the_results(importance.best_exact_collect,
+      out_exact_res_ref);
+    for(loop = 0; loop < hyperlog.length; ++loop)
+    {
+      importance.exact_log.push(hyperlog[loop].new_copy());
+    }
   }
 
   // and finally, un-hide the output
@@ -2897,6 +2928,7 @@ function none_better()
 
 // takes a collect_and_avail in ca, turns it into some helpful HTML summary,
 // and inserts it into the HTML element referenced by ref
+// also creates and returns an array of item_entry() objects in which 
 function hypertext_the_results(ca, ref)
 {
   var currency_string;
@@ -2907,6 +2939,9 @@ function hypertext_the_results(ca, ref)
   var oloop;
   var ray;
   var b_ray;
+
+  var insert_item = new item_entry();
+  var return_ray = [];
 
   currency_string = "$";
   if(currency_ref != null)
@@ -3055,11 +3090,15 @@ function hypertext_the_results(ca, ref)
     cell_ref.appendChild(text_ref);
     row_ref.appendChild(cell_ref);
 
+    insert_item.quantity = b_ray[loop].quantity;
+
     cell_ref = document.createElement("td");
     text_ref = document.createTextNode(
       display_container.items[b_ray[loop].index].name);
     cell_ref.appendChild(text_ref);
     row_ref.appendChild(cell_ref);
+
+    insert_item.name = display_container.items[b_ray[loop].index].name;
 
     cell_ref = document.createElement("td");
     cell_ref.style.textAlign = "right";
@@ -3126,6 +3165,8 @@ function hypertext_the_results(ca, ref)
     }
 
     table_ref.appendChild(row_ref);
+
+    return_ray.push(insert_item.new_copy());
   }
 
   ref.appendChild(table_ref);
@@ -3213,6 +3254,8 @@ function hypertext_the_results(ca, ref)
   }
 
   ref.appendChild(table_ref);
+
+  return return_ray;
 }
 
 
@@ -3232,35 +3275,42 @@ function show_inputs()
 
 function best_under_remove()
 {
-  take_this_stuff_out(importance.best_under_collect);
+  // take_this_stuff_out(importance.best_under_collect);
+  take_this_stuff_out(importance.under_log);
 }
 
 
 function best_over_remove()
 {
-  take_this_stuff_out(importance.best_over_collect);
+  // take_this_stuff_out(importance.best_over_collect);
+  take_this_stuff_out(importance.over_log);
 }
 
 
 function best_exact_remove()
 {
-  take_this_stuff_out(importance.best_exact_collect);
+  // take_this_stuff_out(importance.best_exact_collect);
+  take_this_stuff_out(importance.exact_log);
 }
 
 
 // all those buttons could use a convenient single interface to do their stuff
-function take_this_stuff_out(hitlist_ca)
+// function take_this_stuff_out(hitlist_ca)
+// it doesn't take a ca any more; now it takes one of those new logs
+function take_this_stuff_out(hitlist_log)
 {
-  if(hitlist_ca == null) return;
+  // if(hitlist_ca == null) return;
+  if(hitlist_log.length == 0) return;
 
   document.getElementById("under_remove_button").setAttribute("disabled", "");
   document.getElementById("over_remove_button").setAttribute("disabled", "");
   document.getElementById("exact_remove_button").setAttribute("disabled", "");
 
-  var ray;
+  // var ray;
   var loop;
-  var oloop;
+  // var oloop;
 
+/***
   for(oloop = 0; oloop < hitlist_ca.collect.length; ++oloop)
   {
     ray = importance.items_lookup(hitlist_ca.collect[oloop].index,
@@ -3269,6 +3319,15 @@ function take_this_stuff_out(hitlist_ca)
     {
       display_container.items[ray[loop].index].quantity -= ray[loop].quantity;
     }
+  }
+***/
+
+  var spot;
+  for(loop = 0; loop < hitlist_log.length; ++loop)
+  {
+    spot = display_container.find(hitlist_log[loop].name);
+    if(spot < 0) continue;
+    display_container.items[spot].quantity -= hitlist_log[loop].quantity;
   }
 
   // forward or backward?  forward is trickier, but more fun; forward it is
@@ -4102,7 +4161,7 @@ Priority Control Gizmo: <button onclick = "gizmo_adjust(1)">+1</button> /
           <button onclick = "secret_load()">Load from this text</button>
         </td>
         <td style = "padding-right:0px">
-          <textarea id = "pnp" rows = "15" cols = "40"></textarea>
+          <textarea id = "pnp" rows = "15" cols = "40" readonly></textarea>
           <br>
           <button onclick = "npnp2pnp()">NPNP to PNP</button>
         </td>
