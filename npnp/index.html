@@ -16,6 +16,9 @@ deprecated, and fictional currency symbols.
 
 2019/09/07: Fixed bug in removing results.
 
+2019/09/12: Further interface improvements.  And let's say that the first entry
+after beta was the official release.
+
 -->
 
 <head>
@@ -107,10 +110,11 @@ function search_mode_change()
   else if(ref.selectedIndex == SEARCH_PRI) search_mode = SEARCH_PRI;
   else return;
 
-  document.getElementById("weight_row").setAttribute("hidden", "");
-  document.getElementById("priority_row").setAttribute("hidden", "");
+  // document.getElementById("weight_row").setAttribute("hidden", "");
+  // document.getElementById("priority_row").setAttribute("hidden", "");
   document.getElementById("priority_control_gizmo").setAttribute("hidden", "");
 
+/***
   if(ref.selectedIndex == SEARCH_HEAVY)
   {
     document.getElementById("weight_row").removeAttribute("hidden");
@@ -118,6 +122,12 @@ function search_mode_change()
   else if(ref.selectedIndex == SEARCH_PRI)
   {
     document.getElementById("priority_row").removeAttribute("hidden");
+    document.getElementById("priority_control_gizmo").removeAttribute("hidden");
+  }
+***/
+  // simplifying this a bit now that I no longer hide weight and priority fields
+  if(ref.selectedIndex == SEARCH_PRI)
+  {
     document.getElementById("priority_control_gizmo").removeAttribute("hidden");
   }
 
@@ -414,6 +424,8 @@ function add_button()
   insert_item.quantity = Number(qty_ref.value);
   insert_item.name = name_ref.value;
   insert_item.value = Number(value_ref.value);
+
+/***
   if(search_mode == SEARCH_HEAVY)
   {
     insert_item.weight = Number(weight_ref.value);
@@ -430,6 +442,11 @@ function add_button()
   {
     insert_item.priority = 1;
   }
+***/
+  // obviated the reason I did that in the first place
+  insert_item.weight = Number(weight_ref.value);
+  insert_item.priority = Number(priority_ref.value);
+
   if(enable_ref.checked)
   {
     insert_item.enabled = true;
@@ -711,6 +728,7 @@ function display_redraw()
     cell_ref.style.textDecoration = "inherit";
     object_ref = document.createElement("input");
     object_ref.style.textDecoration = "inherit";
+    object_ref.style.textAlign = "right";
     object_ref.setAttribute("type", "number");
     object_ref.setAttribute("min", "1");
     object_ref.setAttribute("step", "1");
@@ -870,6 +888,7 @@ function display_redraw()
     object_ref = document.createElement("input");
     object_ref.setAttribute("type", "checkbox");
     object_ref.checked = display_container.items[loop].enabled;
+    object_ref.className = "tab_order_enable";
     useful_string = "enablebox(";
     useful_string += loop;
     useful_string += ", this)";
@@ -989,6 +1008,12 @@ function display_redraw()
     class_list[loop].setAttribute("tabindex", tab_order_count);
   }
   class_list = document.getElementsByClassName("tab_order_pri");
+  for(loop = 0; loop < class_list.length; ++loop)
+  {
+    ++tab_order_count;
+    class_list[loop].setAttribute("tabindex", tab_order_count);
+  }
+  class_list = document.getElementsByClassName("tab_order_enable");
   for(loop = 0; loop < class_list.length; ++loop)
   {
     ++tab_order_count;
@@ -3043,6 +3068,20 @@ function hypertext_the_results(ca, ref)
     row_ref.appendChild(cell_ref);
   }
 
+  // new column for the results: Unsold quantity!
+  cell_ref = document.createElement("td");
+  cell_ref.style.verticalAlign = "bottom";
+  text_ref = document.createTextNode("(Qty.");
+  cell_ref.appendChild(text_ref);
+  object_ref = document.createElement("br");
+  cell_ref.appendChild(object_ref);
+  object_ref = document.createElement("span");
+  object_ref.style.textDecoration = "underline";
+  text_ref = document.createTextNode("Unused)");
+  object_ref.appendChild(text_ref);
+  cell_ref.appendChild(object_ref);
+  row_ref.appendChild(cell_ref);
+
   table_ref.appendChild(row_ref);
 
   b_ray = [];
@@ -3163,6 +3202,23 @@ function hypertext_the_results(ca, ref)
       cell_ref.appendChild(text_ref);
       row_ref.appendChild(cell_ref);
     }
+
+    cell_ref = document.createElement("td");
+    cell_ref.style.textAlign = "right";
+    useful_string = "";
+    useful_string += (display_container.items[b_ray[loop].index].quantity -
+      b_ray[loop].quantity);
+    if(Number(useful_string) <= 0)
+    {
+      useful_string = "-";
+    }
+    else
+    {
+      useful_string = "(" + useful_string + ")";
+    }
+    text_ref = document.createTextNode(useful_string);
+    cell_ref.appendChild(text_ref);
+    row_ref.appendChild(cell_ref);
 
     table_ref.appendChild(row_ref);
 
@@ -4077,35 +4133,58 @@ Miscellaneous: Currency symbol: <select id = "dollary_select" onchange = "dollar
   <option title = "Crowns">&#128081;</option>
   <option title = "Bitcoin">&#8383;</option>
   <option title = "Dogecoin">&#208;</option>
-</select> || Search time limit: <input id = "time_limit_input" type = "number" min = "5" max = "60" step = "1" value = "10" style = "text-align:right" title = "This sort of search problem can get very big, very quickly.  Set a maximum search time here to keep things resonable.  If the search lasts longer than this, it will end and display the best result it has at that point."> second(s).
+</select> <span style = "text-decoration-line:underline;text-decoration-style:dotted" title = "Purely decorative">( ? )</span> || Search time limit: <input id = "time_limit_input" type = "number" min = "5" max = "60" step = "1" value = "10" style = "text-align:right"> second(s). <span style = "text-decoration-line:underline;text-decoration-style:dotted" title = "This sort of search problem can get very big, very quickly.  Set a maximum search time here to keep things resonable.  If the search lasts longer than this, it will end and display the best result it has at that point.">( ? )</span>
 <br><br>
 
 <div id = "inputs_div">
 Add an item <label>(<input type = "checkbox" id = "start_enabled_box" checked>and enable)</label>:<br>
 <table>
   <tr>
-    <td style = "text-align:right">Quantity:</td>
-    <td><input id = "quantity_input_new" type = "number" min = "1" step = "1" value = "1"></td>
-  </tr>
-  <tr>
-    <td style = "text-align:right">Name:</td>
-    <td><input id = "name_input_new" type = "text" size = "40"> <span id = "name_derp" hidden>(Must be unique.)</span></td>
-  </tr>
-  <tr>
-    <td style = "text-align:right">Value:</td>
-    <td><span class = "dollardingy">$</span><input id = "value_input_new" type = "number" min = "1" step = "1" value = "1"></td>
-  </tr>
-  <tr id = "weight_row" hidden>
-    <td style = "text-align:right">Weight:</td>
-    <td><input id = "weight_input_new" type = "number" min = "0" value = "0" step = "0.01"></td>
-  </tr>
-  <tr id = "priority_row" hidden>
-    <td style = "text-align:right">Priority:</td>
-    <td><input id = "priority_input_new" type = "number" min = "1" value = "1" step = "1">
+    <td>
+      <table>
+        <tr>
+          <td style = "text-align:right">Quantity:</td>
+          <td><input id = "quantity_input_new" type = "number" min = "1" step = "1" value = "1"></td>
+        </tr>
+        <tr>
+          <td style = "text-align:right">Name:</td>
+          <td><input id = "name_input_new" type = "text" size = "24"> <span id = "name_derp" hidden>(Must be unique.)</span></td>
+        </tr>
+        <tr>
+          <td style = "text-align:right">Value:</td>
+          <td><span class = "dollardingy">$</span><input id = "value_input_new" type = "number" min = "1" step = "1" value = "1"></td>
+        </tr>
+
+<!--
+        <tr id = "weight_row" hidden>
+          <td style = "text-align:right">Weight:</td>
+          <td><input id = "weight_input_new" type = "number" min = "0" value = "0" step = "0.01"></td>
+        </tr>
+        <tr id = "priority_row" hidden>
+          <td style = "text-align:right">Priority:</td>
+          <td><input id = "priority_input_new" type = "number" min = "1" value = "1" step = "1">
+        </tr>
+-->
+
+      </table>
+      <button onclick = "add_button()">Add this thing!</button>
+    </td>
+    <td style = "padding-left:10px;border-left:1px solid black;vertical-align:top">
+      Fields which may be ignored or not if not in that search mode:
+      <table>
+        <tr>
+          <td style = "text-align:right">Weight:</td>
+          <td><input id = "weight_input_new" type = "number" min = "0" value = "0" step = "0.01"></td>
+        </tr>
+        <tr>
+          <td style = "text-align:right">Priority:</td>
+          <td><input id = "priority_input_new" type = "number" min = "1" value = "1" step = "1">
+        </tr>
+      </table>
+      <button onclick = "add_button()">Extra add button for tab-entry convenience</button>
+    </td>
   </tr>
 </table>
-<button onclick = "add_button()">Add this thing!</button>
-
 <br><br>
 
 <button id = "show_results_button" hidden onclick = "show_outputs()">
