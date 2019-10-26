@@ -31,6 +31,11 @@ some time, but the internal state was left on "Fastest match" and wouldn't
 get corrected until a different search mode was selected.  Fixed initial
 internal state.
 
+2019/10/26:
+- Minor interface tweaks
+- More information in priority mode summary
+- Improvements to secret gadgets
+
 -->
 
 <head>
@@ -406,6 +411,7 @@ function add_button()
 
   // if(name_ref.value.length <= 0) return;
   useful_string = name_ref.value.trim();
+  if(useful_string.length == 0) return;
   // if(display_container.find(name_ref.value) !== -1)
   // if(display_container.find(useful_string) !== -1)  // no, not that either
   spot = display_container.find(useful_string);
@@ -530,14 +536,16 @@ function display_redraw()
   // try putting the buttons here
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_qty_a()");
-  text_ref = document.createTextNode("A");
+  // text_ref = document.createTextNode("A");
+  text_ref = document.createTextNode(String.fromCharCode(8593));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
-  text_ref = document.createTextNode("/");
-  cell_ref.appendChild(text_ref);
+  // text_ref = document.createTextNode("/");
+  // cell_ref.appendChild(text_ref);
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_qty_d()");
-  text_ref = document.createTextNode("D");
+  // text_ref = document.createTextNode("D");
+  text_ref = document.createTextNode(String.fromCharCode(8595));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
   // hey that works
@@ -554,14 +562,16 @@ function display_redraw()
   cell_ref.appendChild(object_ref);
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_name_a()");
-  text_ref = document.createTextNode("A");
+  // text_ref = document.createTextNode("A");
+  text_ref = document.createTextNode(String.fromCharCode(8593));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
-  text_ref = document.createTextNode("/");
-  cell_ref.appendChild(text_ref);
+  // text_ref = document.createTextNode("/");
+  // cell_ref.appendChild(text_ref);
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_name_d()");
-  text_ref = document.createTextNode("D");
+  // text_ref = document.createTextNode("D");
+  text_ref = document.createTextNode(String.fromCharCode(8595));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
   row_ref.appendChild(cell_ref);
@@ -576,14 +586,16 @@ function display_redraw()
   cell_ref.appendChild(object_ref);
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_value_a()");
-  text_ref = document.createTextNode("A");
+  // text_ref = document.createTextNode("A");
+  text_ref = document.createTextNode(String.fromCharCode(8593));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
-  text_ref = document.createTextNode("/");
-  cell_ref.appendChild(text_ref);
+  // text_ref = document.createTextNode("/");
+  // cell_ref.appendChild(text_ref);
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_value_d()");
-  text_ref = document.createTextNode("D");
+  // text_ref = document.createTextNode("D");
+  text_ref = document.createTextNode(String.fromCharCode(8595));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
   row_ref.appendChild(cell_ref);
@@ -600,14 +612,16 @@ function display_redraw()
     cell_ref.appendChild(object_ref);
     object_ref = document.createElement("button");
     object_ref.setAttribute("onclick", "sort_weight_a()");
-    text_ref = document.createTextNode("A");
+    // text_ref = document.createTextNode("A");
+    text_ref = document.createTextNode(String.fromCharCode(8593));
     object_ref.appendChild(text_ref);
     cell_ref.appendChild(object_ref);
-    text_ref = document.createTextNode("/");
-    cell_ref.appendChild(text_ref);
+    // text_ref = document.createTextNode("/");
+    // cell_ref.appendChild(text_ref);
     object_ref = document.createElement("button");
     object_ref.setAttribute("onclick", "sort_weight_d()");
-    text_ref = document.createTextNode("D");
+    // text_ref = document.createTextNode("D");
+    text_ref = document.createTextNode(String.fromCharCode(8595));
     object_ref.appendChild(text_ref);
     cell_ref.appendChild(object_ref);
     row_ref.appendChild(cell_ref);
@@ -673,14 +687,16 @@ function display_redraw()
     cell_ref.appendChild(object_ref);
     object_ref = document.createElement("button");
     object_ref.setAttribute("onclick", "sort_pri_a()");
-    text_ref = document.createTextNode("A");
+    // text_ref = document.createTextNode("A");
+    text_ref = document.createTextNode(String.fromCharCode(8593));
     object_ref.appendChild(text_ref);
     cell_ref.appendChild(object_ref);
-    text_ref = document.createTextNode("/");
-    cell_ref.appendChild(text_ref);
+    // text_ref = document.createTextNode("/");
+    // cell_ref.appendChild(text_ref);
     object_ref = document.createElement("button");
     object_ref.setAttribute("onclick", "sort_pri_d()");
-    text_ref = document.createTextNode("D");
+    // text_ref = document.createTextNode("D");
+    text_ref = document.createTextNode(String.fromCharCode(8595));
     object_ref.appendChild(text_ref);
     cell_ref.appendChild(object_ref);
     row_ref.appendChild(cell_ref);
@@ -691,14 +707,16 @@ function display_redraw()
   cell_ref.setAttribute("class", "headerific");
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_enabled_y()");
-  text_ref = document.createTextNode("Y");
+  // text_ref = document.createTextNode("Y");
+  text_ref = document.createTextNode(String.fromCharCode(8593));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
-  text_ref = document.createTextNode("/");
-  cell_ref.appendChild(text_ref);
+  // text_ref = document.createTextNode("/");
+  // cell_ref.appendChild(text_ref);
   object_ref = document.createElement("button");
   object_ref.setAttribute("onclick", "sort_enabled_n()");
-  text_ref = document.createTextNode("N");
+  // text_ref = document.createTextNode("N");
+  text_ref = document.createTextNode(String.fromCharCode(8595));
   object_ref.appendChild(text_ref);
   cell_ref.appendChild(object_ref);
   object_ref = document.createElement("br");
@@ -3094,6 +3112,8 @@ function none_better()
 // takes a collect_and_avail in ca, turns it into some helpful HTML summary,
 // and inserts it into the HTML element referenced by ref
 // also creates and returns an array of item_entry() objects in which 
+// ... in which what?  I think I forgot to finish this comment... was it "in
+// which only name and quantity are valid"?  Because that's true and noteworthy
 function hypertext_the_results(ca, ref)
 {
   var currency_string;
@@ -3107,6 +3127,10 @@ function hypertext_the_results(ca, ref)
 
   var insert_item = new item_entry();
   var return_ray = [];
+
+  // priority nests those bulleted lists very deeply
+  var ulref3;
+  var liref3;
 
   currency_string = "$";
   if(currency_ref != null)
@@ -3443,6 +3467,27 @@ function hypertext_the_results(ca, ref)
       useful_string += privals[loop];
       text_ref = document.createTextNode(useful_string);
       cell_ref.appendChild(text_ref);
+      // even more stats with even deeper nesting
+      if(privals[loop] > 0)  // but only if it's worthwhile
+      {
+        // var ulref3, liref3
+        ulref3 = document.createElement("ul");
+        liref3 = document.createElement("li");
+        useful_string = what_of_what_for_pri_results(privals[loop],
+          importance.target_value, "target value", currency_string);
+        text_ref = document.createTextNode(useful_string);
+        liref3.appendChild(text_ref);
+        ulref3.appendChild(liref3);
+        liref3 = document.createElement("li");
+        useful_string = "total for rank ";
+        useful_string += importance.priority_index[loop];
+        useful_string = what_of_what_for_pri_results(privals[loop],
+          importance.priority_maxval_map[loop], useful_string, currency_string);
+        text_ref = document.createTextNode(useful_string);
+        liref3.appendChild(text_ref);
+        ulref3.appendChild(liref3);
+        cell_ref.appendChild(ulref3);
+      }
       row_ref.appendChild(cell_ref);
     }
     obj_ref.appendChild(row_ref);
@@ -3778,10 +3823,166 @@ function npnp2pnp()
   if(search_mode == SEARCH_FAST) useful_string += "1";
   else if(search_mode == SEARCH_FEW) useful_string += "5";
   else if(search_mode == SEARCH_HEAVY) useful_string += "2";
-  else if(search_mode == SEARCH_PRI) useful_string += "3";
+  // else if(search_mode == SEARCH_PRI) useful_string += "3";
+  // now faking priority ranks with carefully chosen fake item weights
+  else if(search_mode == SEARCH_PRI) useful_string += "2";
   else return;
 
   useful_string += "\n4\n";
+
+  // new fake priority mode paperwork
+  var idx;  // a useful variable
+  var priorities_map = [];  // indexes to display_container.items, sorted
+    // by priority, reversed
+  var pcollapse_index = [];  // indexing every listed priority rank, 1 entry
+    // per rank
+  var scalars_index = [];  // parallel to pcollapse_index; indicates what
+    // should be multiplied by value to get the weight of an item at each rank
+  var ploop;  // paperwork/priority loop, and an unfortunate onomatopoeia
+  var weight_sum;  // paperwork variable
+  var lowest_value_at_this_rank;
+  var paperwork_flag;
+
+  if(search_mode == SEARCH_PRI)
+  {
+    // start by building pcollapse_index
+    for(loop = 0; loop < display_container.items.length; ++loop)
+    {
+      if(!(display_container.items[loop].enabled)) continue;
+      pcollapse_index.push(display_container.items[loop].priority);
+    }
+    if(pcollapse_index.length == 0) return;  // short-cut that possibility
+    pcollapse_index.sort(function(a, b)
+    {
+      return (Number(a) - Number(b));
+    });
+    loop = 1;
+    while(loop < pcollapse_index.length)
+    {
+      if(pcollapse_index[loop] == pcollapse_index[loop - 1])
+      {
+        pcollapse_index.splice(loop, 1);
+      }
+      else
+      {
+        ++loop;
+      }
+    }
+
+    // now priorities_map
+    for(loop = 0; loop < display_container.items.length; ++loop)
+    {
+      if(!(display_container.items[loop].enabled)) continue;
+      priorities_map.push(loop);
+    }
+    priorities_map.sort(function(a, b)
+    {
+      if(display_container.items[a].priority >
+        display_container.items[b].priority) return -1;
+      if(display_container.items[a].priority <
+        display_container.items[b].priority) return 1;
+      return 0;
+    });
+
+    // fill scalars_index to the right length
+    for(loop = 0; loop < pcollapse_index.length; ++loop)
+    {
+      scalars_index.push(1);
+    }
+
+    // now the paperwork
+    if(priorities_map.length > 0)
+    {
+      lowest_value_at_this_rank =
+        display_container.items[priorities_map[0]].value;
+    }
+    for(loop = 0; loop < priorities_map.length; ++loop)
+    {
+      if(display_container.items[priorities_map[loop]].value <
+        lowest_value_at_this_rank) lowest_value_at_this_rank =
+        display_container.items[priorities_map[loop]].value;
+      // well that was simple enough for the main part of this loop, but now
+      // for the check-if-that-was-the-end-of-this-rank part
+      paperwork_flag = false;
+      if(loop >= (priorities_map.length - 1))
+      {
+        paperwork_flag = true;
+      }
+      else
+      {
+        if(display_container.items[priorities_map[loop]].priority !=
+          display_container.items[priorities_map[loop + 1]].priority)
+        {
+          paperwork_flag = true;
+        }
+      }
+      if(paperwork_flag)
+      {
+        idx = pcollapse_index.indexOf(
+          display_container.items[priorities_map[loop]].priority);
+        if((idx < 0) || (idx >= scalars_index.length))
+        {
+          alert("forgot how to count alert");
+          return;
+        }
+
+        if(display_container.items[priorities_map[loop]].priority ==
+          display_container.items[priorities_map[0]].priority)
+        {
+          // first section -- scalar is 1
+          scalars_index[idx] = 1;  // it was already 1... well heck it's 1 again
+        }
+        else
+        {
+          weight_sum = 0;
+          // go figure out what *everything* before this rank weighs...
+          // this may be the funkiest for() loop I've ever written
+          for(ploop = 0;
+            display_container.items[priorities_map[ploop]].priority >
+            display_container.items[priorities_map[loop]].priority; ++ploop)
+          {
+            // look up idx each time, sure; it's just for one secret button
+            idx = pcollapse_index.indexOf(
+              display_container.items[priorities_map[ploop]].priority);
+            if((idx < 0) || (idx >= scalars_index.length))
+            {
+              alert("nested forgot how to count alert sequel");
+              return;
+            }
+
+            // so now... value times quantity times scalar plus whatever else
+            // was already in there
+            weight_sum +=
+              (display_container.items[priorities_map[ploop]].value *
+              display_container.items[priorities_map[ploop]].quantity *
+              scalars_index[idx])
+          }
+
+          // let's bump that weight up by just a bit
+          weight_sum = (weight_sum * 1.001);
+
+          // and figure out the scalar that makes the lowest valued item at
+          // this rank heavier than everything at previous ranks
+          // ... we need this idx back
+          idx = pcollapse_index.indexOf(
+            display_container.items[priorities_map[loop]].priority);
+          if((idx < 0) || (idx >= scalars_index.length))
+          {
+            alert("denested bad count alert");
+            return;
+          }
+          scalars_index[idx] = Math.ceil(weight_sum / lowest_value_at_this_rank);
+        }
+
+        // and last thing (if not at end) -- reset lowest value for next section
+        if(loop < (priorities_map.length - 1))
+        {
+          lowest_value_at_this_rank =
+            display_container.items[priorities_map[loop + 1]].value;
+        }
+      }
+    }
+  }
 
   for(loop = 0; loop < display_container.items.length; ++loop)
   {
@@ -3800,8 +4001,17 @@ function npnp2pnp()
     {
       // I could do a pseudo-npnp priority search in pnp with properly selected
       // item weights, but I'll just stick with 1 == yes; >1 == no for now
-      if(display_container.items[loop].priority == 1) useful_string += "y";
-      else useful_string += "n";
+      // if(display_container.items[loop].priority == 1) useful_string += "y";
+      // else useful_string += "n";
+      // WELL NOW I AM!
+      idx = pcollapse_index.indexOf(display_container.items[loop].priority);
+      if((idx < 0) || (idx >= scalars_index.length))
+      {
+        alert("variables fell down");
+        return;
+      }
+      useful_string +=
+        (display_container.items[loop].value * scalars_index[idx])
       useful_string += "\n";
     }
     useful_string += display_container.items[loop].quantity;
@@ -4163,6 +4373,8 @@ function load_button_fn()
   var loop;
   var useful_string;
 
+  var who_was_there = [];  // parallel to items -- disable those not present
+
   if(sel_ref == null) return;
   if(sel_ref.selectedIndex == 0) return;
 
@@ -4173,14 +4385,37 @@ function load_button_fn()
     return;
   }
 
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    who_was_there.push(false);
+  }
+
   for(loop = 0; loop < saved_sets.lists[list_spot].the_list.length; ++loop)
   {
     useful_string = saved_sets.lists[list_spot].the_list[loop].name;
     // let's see whether that item is currently in the main collection
     dc_spot = display_container.find(useful_string);
     if(dc_spot < 0) continue;
+    if(dc_spot >= who_was_there.length)
+    {
+      alert("loader forgot how to count");
+      return;
+    }
     display_container.items[dc_spot].value =
       saved_sets.lists[list_spot].the_list[loop].value;
+    who_was_there[dc_spot] = true;
+  }
+
+  // disable entries that weren't in the saved list
+  if(display_container.items.length != who_was_there.length)
+  {
+    alert("loader thought it knew how to count but was mistaken");
+    return;
+  }
+  for(loop = 0; loop < display_container.items.length; ++loop)
+  {
+    display_container.items[loop].enabled =
+      (display_container.items[loop].enabled && who_was_there[loop]);
   }
 
   sel_ref.selectedIndex = 0;
@@ -4198,6 +4433,35 @@ function saved_clear()
   {
     sel_ref.remove(1);
   }
+}
+
+
+// a late addition -- a what-of-what without the part outside the parentheses
+// (that actually calls it anyway and then strips parts off the results)
+function what_of_what_for_pri_results(part, whole, what, sym)
+{
+  var useful_string = what_of_what_for_results(part, whole, what, sym);
+  var idx;
+
+  idx = useful_string.indexOf("(");
+  if(idx < 0)
+  {
+    alert("heckwelp");
+    return "";
+  }
+
+  useful_string = useful_string.substr(idx + 1);
+
+  idx = useful_string.lastIndexOf(")");
+  if(idx < 0)
+  {
+    alert("heckwelp the sequel");
+    return "";
+  }
+
+  useful_string = useful_string.substr(0, idx);
+
+  return useful_string;
 }
 
 
@@ -4265,6 +4529,7 @@ Miscellaneous: Currency symbol: <select id = "dollary_select" onchange = "dollar
   <option title = "Strange Generic Currency Symbol">&#164;</option>
   <option title = "This Thing which Is Not Strictly a Currency Symbol but which Looks Like It May as Well Be">&#167;</option>
   <option title = "Paragraphs, because Why Not">&#182;</option>
+  <option title = "This Whirlpool of Commas">&#1161;</option>
   <option title = "Credits">Cr</option>
   <option title = "Republic Credits">RCr</option>
   <option title = "Imperial Credits">ICr</option>
@@ -4274,7 +4539,7 @@ Miscellaneous: Currency symbol: <select id = "dollary_select" onchange = "dollar
   <option title = "Crowns">&#128081;</option>
   <option title = "Bitcoin">&#8383;</option>
   <option title = "Dogecoin">&#208;</option>
-</select> <span style = "text-decoration-line:underline;text-decoration-style:dotted" title = "Purely decorative">(?)</span> || Search time limit: <input id = "time_limit_input" type = "number" min = "5" max = "60" step = "1" value = "10" style = "text-align:right"> second(s). <span style = "text-decoration-line:underline;text-decoration-style:dotted" title = "This sort of search problem can get very big, very quickly.  Set a maximum search time here to keep things resonable.  If the search lasts longer than this, it will end and display the best result it has at that point.">(?)</span>
+</select> <span style = "text-decoration-line:underline;text-decoration-style:dotted" title = "Purely decorative">(?)</span> || Search time limit: <input id = "time_limit_input" type = "number" min = "5" max = "60" step = "1" value = "10" style = "text-align:right"> seconds. <span style = "text-decoration-line:underline;text-decoration-style:dotted" title = "This sort of search problem can get very big, very quickly.  Set a maximum search time here to keep things resonable.  If the search lasts longer than this, it will end and display the best result it has at that point.">(?)</span>
 <br><br>
 
 <div id = "inputs_div">
