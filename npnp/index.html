@@ -1118,6 +1118,16 @@ function name_change(index, ref)
   // if name entered was the same name it already had, just return
   if(ref.value == display_container.items[numberdx].name) return;
 
+  // tidy up
+  ref.value = ref.value.trim();
+
+  // make sure it's not empty
+  if(ref.value.length == 0)
+  {
+    ref.value = display_container.items[numberdx].name;
+    return;
+  }
+
   // if it's the same name name as something already in there, complain, reset
   // the input to the stored name, and return
   if(display_container.find(ref.value) != -1)
@@ -4554,7 +4564,7 @@ Add an item <label>(<input type = "checkbox" id = "start_enabled_box" checked>an
         </tr>
         <tr>
           <td style = "text-align:right">Name:</td>
-          <td><input id = "name_input_new" type = "text" size = "24"> <span id = "name_derp" hidden>(Must be unique.)</span></td>
+          <td><input id = "name_input_new" type = "text" size = "24" placeholder = "(Required)"> <span id = "name_derp" hidden>(Must be unique.)</span></td>
         </tr>
         <tr>
           <td style = "text-align:right">Value:</td>
