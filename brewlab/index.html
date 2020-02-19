@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+
+<html>
+<!--
+Starting this one off right, with change notes right from the beginning.
+
+2020/02/11: Started work.
+
+2020/02/14: Finished work... okay then.
+
+2020/02/17: Oh good, I did think up more: started adding an ingredients filter.
+
+2020/08/18: Finished adding the ingredients filter.
+-->
+
+<head>
+<meta charset = "UTF-8">
+<title>Skyrim Alchemy Brew Lab</title>
+
+<style>
+td.most
+{
+  padding-left: 8px;
+  border-left: 1px solid black;
+  padding-right: 8px;
+  vertical-align: top;
+}
+td.that_one
+{
+  vertical-align: top;
+  padding-right: 8px;
+}
+
+td.outcount
+{
+  text-align: right;
+  vertical-align: top;
+  padding-right: 10px;
+  padding-bottom: 8px;
+}
+td.outtext
+{
+  vertical-align: top;
+  padding-right: 10px;
+  padding-left: 25px;
+  padding-bottom: 10px;
+}
+
+span.ul
+{
+  text-decoration: underline;
+}
+
+ul.res
+{
+  padding: 0px;
+  margin: 0px;
+}
+
+</style>
+
+<script>
+
+// name and is-it-a-poison
+var effects_list = [
+  ["Restore Health", false],           // 00
+  ["Restore Magicka", false],          // 01
+  ["Restore Stamina", false],          // 02
+  ["Fortify Health", false],           // 03
+  ["Fortify Magicka", false],          // 04
+  ["Fortify Stamina", false],          // 05
+  ["Regenerate Health", false],        // 06
+  ["Regenerate Magicka", false],       // 07
+  ["Regenerate Stamina", false],       // 08
+  ["Damage Health", true],             // 09
+  ["Damage Magicka", true],            // 10
+  ["Damage Stamina", true],            // 11
+  ["Ravage Health", true],             // 12
+  ["Ravage Magicka", true],            // 13
+  ["Ravage Stamina", true],            // 14
+  ["Damage Magicka Regen", true],      // 15
+  ["Damage Stamina Regen", true],      // 16
+  ["Lingering Damage Health", true],   // 17
+  ["Lingering Damage Magicka", true],  // 18
+  ["Lingering Damage Stamina", true],  // 19
+  ["Fortify Alteration", false],       // 20
+  ["Fortify Barter", false],           // 21
+  ["Fortify Block", false],            // 22
+  ["Fortify Carry Weight", false],     // 23 oops, not a skill :/
+  ["Fortify Conjuration", false],      // 24
+  ["Fortify Destruction", false],      // 25
+  ["Fortify Enchanting", false],       // 26
+  ["Fortify Heavy Armor", false],      // 27
+  ["Fortify Illusion", false],         // 28
+  ["Fortify Light Armor", false],      // 29
+  ["Fortify Lockpicking", false],      // 30
+  ["Fortify Marksman", false],         // 31
+  ["Fortify One-Handed", false],       // 32
+  ["Fortify Pickpocket", false],       // 33
+  ["Fortify Restoration", false],      // 34
+  ["Fortify Smithing", false],         // 35
+  ["Fortify Sneak", false],            // 36
+  ["Fortify Two-Handed", false],       // 37
+  ["Resist Fire", false],              // 38
+  ["Resist Frost", false],             // 39
+  ["Resist Shock", false],             // 40
+  ["Resist Magic", false],             // 41
+  ["Resist Poison", false],            // 42
+  ["Weakness to Fire", true],          // 43
+  ["Weakness to Frost", true],         // 44
+  ["Weakness to Shock", true],         // 45
+  ["Weakness to Magic", true],         // 46
+  ["Weakness to Poison", true],        // 47
+  ["Cure Disease", false],             // 48
+  ["Fear", true],                      // 49
+  ["Frenzy", true],                    // 50
+  ["Invisibility", false],             // 51
+  ["Paralysis", true],                 // 52
+  ["Slow", true],                      // 53
+  ["Waterbreathing", false]            // 54
+];
+
+
+var ingreds_list = [
+  ["Abecean Longfin", 44, 36, 47, 34],               //   0
+  ["Ancestor Moth Wing (DG)", 11, 24, 15, 26],       //   1
+  ["Bear Claws", 2, 3, 32, 15],                      //   2
+  ["Bee", 2, 14, 8, 45],                             //   3
+  ["Beehive Husk", 42, 29, 36, 25],                  //   4
+  ["Bleeding Crown", 43, 22, 47, 41],                //   5
+  ["Blisterwort", 11, 50, 0, 35],                    //   6
+  ["Blue Butterfly Wing", 11, 24, 15, 26],           //   7
+  ["Blue Dartwing", 40, 33, 0, 49],                  //   8
+  ["Blue Mountain Flower", 0, 24, 3, 15],            //   9
+  ["Bone Meal", 11, 38, 24, 14],                     //  10
+  ["Briar Heart", 1, 22, 52, 4],                     //  11
+  ["Butterfly Wing", 0, 21, 19, 10],                 //  12
+  ["Canis Root", 11, 32, 31, 52],                    //  13
+  ["Charred Skeever Hide", 2, 48, 42, 0],            //  14
+  ["Chaurus Eggs", 47, 5, 10, 51],                   //  15
+  ["Chaurus Hunter Antennae (DG)", 11, 24, 15, 26],  //  16
+  ["Chicken\'s Egg", 41, 15, 54, 19],                //  17
+  ["Creep Cluster", 1, 16, 23, 46],                  //  18
+  ["Crimson Nirnroot", 9, 11, 51, 41],               //  19
+  ["Cyrodilic Spadetail", 11, 34, 49, 12],           //  20
+  ["Daedra Heart", 0, 16, 10, 49],                   //  21
+  ["Deathbell", 9, 14, 53, 47],                      //  22
+  ["Dragon\'s Tongue", 38, 21, 28, 37],              //  23
+  ["Dwarven Oil", 46, 28, 7, 1],                     //  24
+  ["Ectoplasm", 1, 25, 4, 9],                        //  25
+  ["Elves Ear", 1, 31, 44, 38],                      //  26
+  ["Eye of Sabre Cat", 2, 12, 10, 0],                //  27
+  ["Falmer Ear", 9, 50, 42, 30],                     //  28
+  ["Fire Salts", 44, 38, 1, 7],                      //  29
+  ["Fly Amanita", 38, 37, 50, 8],                    //  30
+  ["Frost Mirriam", 39, 36, 13, 16],                 //  31
+  ["Frost Salts", 43, 39, 1, 24],                    //  32
+  ["Garlic", 42, 5, 7, 6],                           //  33
+  ["Giant Lichen", 45, 12, 47, 1],                   //  34
+  ["Giant\'s Toe", 11, 3, 23, 16],                   //  35
+  ["Gleamblossom (DG)", 41, 49, 6, 52],              //  36
+  ["Glow Dust", 10, 15, 25, 40],                     //  37
+  ["Glowing Mushroom", 40, 25, 35, 3],               //  38
+  ["Grass Pod", 42, 13, 20, 1],                      //  39
+  ["Hagraven Claw", 41, 18, 26, 21],                 //  40
+  ["Hagraven Feathers", 10, 24, 50, 45],             //  41
+  ["Hanging Moss", 10, 3, 15, 32],                   //  42
+  ["Hawk Beak", 2, 39, 23, 45],                      //  43
+  ["Hawk Feathers", 48, 29, 32, 36],                 //  44
+  ["Hawk\'s Egg (HF)", 41, 15, 54, 19],              //  45
+  ["Histcarp", 2, 4, 16, 54],                        //  46
+  ["Honeycomb", 2, 22, 29, 14],                      //  47
+  ["Human Flesh", 9, 52, 1, 36],                     //  48
+  ["Human Heart", 9, 10, 15, 50],                    //  49
+  ["Ice Wraith Teeth", 44, 27, 51, 43],              //  50
+  ["Imp Stool", 9, 17, 52, 0],                       //  51
+  ["Jazbay Grapes", 46, 4, 7, 12],                   //  52
+  ["Juniper Berries", 43, 31, 6, 16],                //  53
+  ["Large Antlers", 2, 5, 53, 16],                   //  54
+  ["Lavender", 41, 5, 13, 24],                       //  55
+  ["Luna Moth Wing", 10, 29, 6, 51],                 //  56
+  ["Moon Sugar", 43, 39, 1, 7],                      //  57
+  ["Mora Tapinella", 1, 17, 8, 28],                  //  58
+  ["Mudcrab Chitin", 2, 48, 42, 38],                 //  59
+  ["Namira\'s Rot", 10, 30, 49, 6],                  //  60
+  ["Nightshade", 9, 15, 19, 25],                     //  61
+  ["Nirnroot", 9, 11, 51, 41],                       //  62
+  ["Nordic Barnacle", 10, 54, 6, 33],                //  63
+  ["Orange Dartwing", 2, 13, 33, 17],                //  64
+  ["Pearl", 2, 22, 1, 40],                           //  65
+  ["Pine Thrush Egg", 2, 30, 47, 40],                //  66
+  ["Poison Bloom (DG)", 9, 53, 23, 49],              //  67
+  ["Powdered Mammoth Tusk", 2, 36, 43, 49],          //  68
+  ["Purple Mountain Flower", 2, 36, 18, 39],         //  69
+  ["Red Mountain Flower", 1, 13, 4, 9],              //  70
+  ["River Betty", 9, 20, 53, 23],                    //  71
+  ["Rock Warbler Egg", 0, 32, 11, 46],               //  72
+  ["Sabre Cat Tooth", 2, 27, 35, 47],                //  73
+  ["Salmon Roe (HF)", 2, 54, 4, 7],                  //  74
+  ["Salt Pile", 46, 34, 53, 7],                      //  75
+  ["Scaly Pholiota", 46, 28, 8, 23],                 //  76
+  ["Silverside Perch", 2, 16, 12, 39],               //  77
+  ["Skeever Tail", 16, 12, 9, 29],                   //  78
+  ["Slaughterfish Egg", 42, 33, 17, 5],              //  79
+  ["Slaughterfish Scales", 39, 17, 27, 22],          //  80
+  ["Small Antlers", 47, 34, 19, 9],                  //  81
+  ["Small Pearl", 2, 32, 34, 39],                    //  82
+  ["Snowberries", 38, 26, 39, 40],                   //  83
+  ["Spider Egg", 11, 15, 30, 31],                    //  84
+  ["Spriggan Sap", 15, 26, 35, 20],                  //  85
+  ["Swamp Fungal Pod", 40, 18, 52, 0],               //  86
+  ["Taproot", 46, 28, 7, 1],                         //  87
+  ["Thistle Branch", 39, 14, 42, 27],                //  88
+  ["Torchbug Thorax", 2, 18, 46, 5],                 //  89
+  ["Troll Fat", 42, 37, 50, 9],                      //  90
+  ["Tundra Cotton", 41, 4, 22, 21],                  //  91
+  ["Vampire Dust", 51, 1, 6, 48],                    //  92
+  ["Void Salts", 45, 41, 9, 4],                      //  93
+  ["Wheat", 0, 3, 16, 18],                           //  94
+  ["White Cap", 44, 27, 1, 13],                      //  95
+  ["Wisp Wrappings", 2, 25, 23, 41],                 //  96
+  ["Yellow Mountain Flower (DG)", 42, 34, 3, 16],    //  97
+
+  ["Ash Creep Cluster (DB)", 11, 51, 38, 25],        //  98
+  ["Ash Hopper Jelly (DB)", 0, 29, 40, 44],          //  99
+  ["Ashen Grass Pod (DB)", 38, 45, 30, 36],          // 100
+  ["Boar Tusk (DB)", 5, 3, 22, 50],                  // 101
+  ["Burnt Spriggan Wood (DB)", 43, 20, 15, 53],      // 102
+  ["Emperor Parasol Moss (DB)", 9, 4, 6, 37],        // 103
+  ["Felsaad Tern Feathers (DB)", 0, 29, 48, 41],     // 104
+  ["Netch Jelly (DB)", 52, 23, 2, 49],               // 105
+  ["Scathecraw (DB)", 12, 14, 13, 17],               // 106
+  ["Spawn Ash (DB)", 14, 38, 26, 13],                // 107
+  ["Trama Root (DB)", 45, 23, 10, 53],               // 108
+
+  ["Berit\'s Ashes", 11, 38, 24, 14],                // 109
+  ["Farengar\'s Frost Salt", 43, 39, 1, 24],         // 110
+  ["Fine-Cut Void Salts", 45, 41, 9, 4],             // 111
+  ["Jarrin Root", 9, 10, 11, 15]                     // 112
+];
+
+
+function clear_checks()
+{
+  var things = document.getElementsByClassName("effbox");
+  var loop;
+
+  for(loop = 0; loop < things.length; ++loop)
+  {
+    things[loop].checked = false;
+  }
+}
+
+
+function sanity_checks()
+{
+  var loop;
+  var loope;
+  var looupe;
+  var string_thing;
+
+  if(effects_list.length != 55)
+  {
+    alert("effects list length not 55");
+    return;
+  }
+
+  for(loop = 0; loop < effects_list.length; ++loop)
+  {
+    if(effects_list[loop].length != 2)
+    {
+      string_thing = "effects_list sub-list ";
+      string_thing += loop;
+      string_thing += " is the wrong length";
+      alert(string_thing);
+      return;
+    }
+    if(typeof((effects_list[loop])[0]) != typeof(""))
+    {
+      // alert(effects_list
+      alert("bad2");
+      return;
+    }
+    if(typeof((effects_list[loop])[1]) != typeof(false))
+    {
+      alert("bad3");
+      return;
+    }
+  }
+
+  // if(ingreds_list.length != 109)
+  if(ingreds_list.length != 113)
+  {
+    alert("I miscounted");
+    return;
+  }
+
+  for(loop = 0; loop < ingreds_list.length; ++loop)
+  {
+    if(ingreds_list[loop].length != 5)
+    {
+      alert("bad4");
+      return;
+    }
+    if(typeof((ingreds_list[loop])[0]) != typeof(""))
+    {
+      alert("bad5");
+      return;
+    }
+    for(loope = 1; loope < ingreds_list[loop].length; ++loope)
+    {
+      if(typeof((ingreds_list[loop])[loope]) != typeof(0))
+      {
+        alert("bad6");
+        return;
+      }
+      if(!is_valid_effects_index((ingreds_list[loop])[loope]))
+      {
+        alert("bad7");
+        return;
+      }
+    }
+    for(loope = 1; loope < (ingreds_list[loop].length - 1); ++loope)
+    {
+      // two passes to make sure they're all good indexes first
+      for(looupe = loope + 1; looupe < ingreds_list[loop].length; ++looupe)
+      {
+        if((ingreds_list[loop])[loope] == (ingreds_list[loop])[looupe])
+        {
+          alert("duplicate effect in an ingredient");
+          return;
+        }
+      }
+    }
+  }
+
+  var things_list = document.getElementsByClassName("effbox");
+  if(things_list.length != effects_list.length)
+  {
+    alert("bad7");
+    return;
+  }
+
+  // alert("it seems all went well enough so far");
+  clear_checks();
+
+  // and now I need to fill in the text on the filter check boxes
+  var ref;
+  for(loop = 0; loop < ingreds_list.length; ++loop)
+  {
+    string_thing = "ingfil_";
+    string_thing += loop;
+    ref = document.getElementById(string_thing);
+    if(ref == null)
+    {
+      alert("mislabeled");
+      return;
+    }
+    ref = ref.parentElement;  // hop ref up to the <label> container
+    string_thing = " ";
+    string_thing += ingreds_list[loop][0];
+    ref.appendChild(document.createTextNode(string_thing));
+  }
+  ing_sel(1);  // set default selection
+}
+
+
+function heckyeahsearch()
+{
+  var results_button_ref = document.getElementById("results_button");
+  if(results_button_ref == null) return;
+
+  var input_div_ref = document.getElementById("inputs_div");
+  if(input_div_ref == null) return;
+
+  var output_container_ref = document.getElementById("outputs_div");
+  if(output_container_ref == null) return;
+
+  var output_real_ref = document.getElementById("real_results_div");
+  if(output_real_ref == null) return;
+  while(output_real_ref.hasChildNodes())
+  {
+    output_real_ref.removeChild(output_real_ref.firstChild);
+  }
+
+  var loop;
+  var this_box_ref;
+  var effects_wanted = [];
+  var string_thing;
+  var brew_results;
+  var strict = false;  // boolean: restrict to only potions or only poisons
+  var which_way_strict = false;  // false == potions; true == poisons
+  var exact = false;  // the at-least or exact effects setting
+
+  var a_select_ref;
+
+  a_select_ref = document.getElementById("what_kind_select");
+  if(a_select_ref == null) return;
+
+  if(what_kind_select.selectedIndex == 0)
+  {
+    strict = false;  // i.e. nothing changes but may as well write it down
+  }
+  else if(what_kind_select.selectedIndex == 1)
+  {
+    strict = true;
+    which_way_strict = false;
+  }
+  else if(what_kind_select.selectedIndex == 2)
+  {
+    strict = true;
+    which_way_strict = true;
+  }
+  else
+  {
+    alert("unexpected selection");
+    return;
+  }
+
+  a_select_ref = document.getElementById("exacts_select");
+  if(a_select_ref == null) return;
+
+  if(exacts_select.selectedIndex == 0)
+  {
+    exact = false;
+  }
+  else if(exacts_select.selectedIndex == 1)
+  {
+    exact = true;
+  }
+  else
+  {
+    alert("unanticipated selection");
+    return;
+  }
+
+  for(loop = 0; loop < effects_list.length; ++loop)
+  {
+    string_thing = "eff_";
+    if(loop < 10) string_thing += "0";
+    string_thing += loop;
+    this_box_ref = document.getElementById(string_thing);
+    if(this_box_ref == null) return;
+    if(this_box_ref.checked)
+    {
+      effects_wanted.push(loop);
+    }
+  }
+
+  if(effects_wanted.length == 0)
+  {
+    // heck out
+    real_results_div.innerHTML = "You have not selected any effects.  Select some.";
+    inputs_div.setAttribute("hidden", "");
+    outputs_div.removeAttribute("hidden");
+    return;
+  }
+
+  // I need to rethink my not-quite-entirely idiotic search method of two lists
+  // matching and one not... what if a valid potion for the results takes three
+  // ingredients from the first two lists?  Should I pick the third ingredient
+  // twice -- once from a third identical list and again from the non-matching
+  // list?
+
+  // And don't forget to reject three-ingredient potions where the third adds
+  // nothing beyond what the first two do.
+
+  var ingreds_that_have = [];
+  var ingreds_that_dont = [];
+  var moreloop;
+  var this_one_has_it;
+
+  for(loop = 0; loop < ingreds_list.length; ++loop)
+  {
+    // we've got an ingredients filter now! here's where to use it
+    string_thing = "ingfil_";
+    string_thing += loop;
+    this_box_ref = document.getElementById(string_thing);
+    if(this_box_ref == null)
+    {
+      alert("heck hock box");
+      return;
+    }
+    if(!(this_box_ref.checked))
+    {
+      // if not selected, don't add it to either!
+      continue;
+    }
+    this_one_has_it = false;
+    for(moreloop = 1; moreloop < ingreds_list[loop].length; ++moreloop)
+    {
+      if(effects_wanted.indexOf((ingreds_list[loop])[moreloop]) >= 0)
+      {
+        this_one_has_it = true;
+        break;
+      }
+    }
+    if(this_one_has_it)
+    {
+      ingreds_that_have.push(loop);
+    }
+    else
+    {
+      ingreds_that_dont.push(loop);
+    }
+  }
+
+  var ing1;
+  var ing2;
+  var ing3;
+  var ing3alt;
+
+  // for that reject-a-useless-third-ingredient requirement...
+  var results_with_two;
+  var results_with_three;
+  var results_with_other_two;
+  var failed_at_two;
+  // and if results_with_three isn't bigger, third didn't add anything
+
+  // fancy double array for storing workable ingredient combinations
+  var results = [];  // well it'll be double later
+
+  for(ing1 = 0; ing1 < ingreds_that_have.length; ++ing1)
+  {
+    // now pick a second ingredient and see what it does... and even if a second
+    // ingredient doesn't do anything, keep it going because a third could have
+    // effects that match with each of the first two, and that combination would
+    // be missed if we try to shortcut by giving up on a brew branch that makes
+    // nothing with the first two ingredients
+    for(ing2 = ing1 + 1; ing2 < ingreds_that_have.length; ++ing2)
+    {
+      results_with_two = brew_test(ingreds_that_have[ing1],
+        ingreds_that_have[ing2], -1);
+
+      // test it; see if this one should be included in results
+      // this is gonna be a long and complicated process that I'll need to do
+      // more than once, so off to a function this goes
+      if(test_it(effects_wanted, results_with_two, strict, which_way_strict, exact))
+      {
+        results.push([]);
+        results[results.length - 1].push(ingreds_that_have[ing1]);
+        results[results.length - 1].push(ingreds_that_have[ing2]);
+        failed_at_two = false;
+      }
+      else
+      {
+        failed_at_two = true;
+      }
+
+      // now pick a third ingredient -- two times: once from the same list as
+      // the others, and possibly once from the list of everything not in the
+      // first list
+      for(ing3 = ing2 + 1; ing3 < ingreds_that_have.length; ++ing3)
+      {
+        results_with_three = brew_test(ingreds_that_have[ing1],
+          ingreds_that_have[ing2], ingreds_that_have[ing3]);
+
+        // now if that array is no longer than results_with_two, we can tell
+        // that adding that third ingredient had no further effect, so we can
+        // ignore this mixture
+        if(results_with_three.length <= results_with_two.length) continue;
+
+        // if we get here, it had more effects, but we still need to be sure
+        // that we would not get the same results with any 2-ingredient mixture
+        // subset of this recipe -- if we do, then one of the ingredients in
+        // the 3-mixture isn't contributing anything and the same results will
+        // be caught elsewhere by the step that mixes 2 ingredients.
+        results_with_other_two = brew_test(ingreds_that_have[ing1],
+          ingreds_that_have[ing3]);
+        if(results_with_other_two.length >= results_with_three.length) continue;
+        results_with_other_two = brew_test(ingreds_that_have[ing2],
+          ingreds_that_have[ing3]);
+        if(results_with_other_two.length >= results_with_three.length) continue;
+
+        // okay, the third ingredient did add something -- test it
+        if(!test_it(effects_wanted, results_with_three, strict, which_way_strict, exact))
+        {
+          continue;
+        }
+        results.push([]);
+        results[results.length - 1].push(ingreds_that_have[ing1]);
+        results[results.length - 1].push(ingreds_that_have[ing2]);
+        results[results.length - 1].push(ingreds_that_have[ing3]);
+      }
+
+      // the second time -- looking for mixtures with extra effects
+      if(exact) continue;
+
+      // hmm, if the mixture with just the first two didn't pass its test, then
+      // adding an ingredient without desired effects won't make it pass either
+      // so go back and record those results and use them here to decide whether
+      // to skip
+      if(failed_at_two) continue;
+
+      for(ing3alt = 0; ing3alt < ingreds_that_dont.length; ++ing3alt)
+      {
+        results_with_three = brew_test(ingreds_that_have[ing1],
+          ingreds_that_have[ing2], ingreds_that_dont[ing3alt]);
+        if(results_with_three.length > results_with_two.length)
+        {
+          // no need to check for duds -- these sub-combinations won't come up
+          // again; but we do need to check for strict compliance
+          if(test_it(effects_wanted, results_with_three, strict, which_way_strict, exact))
+          {
+            // it passed!
+            results.push([]);
+            results[results.length - 1].push(ingreds_that_have[ing1]);
+            results[results.length - 1].push(ingreds_that_have[ing2]);
+            results[results.length - 1].push(ingreds_that_dont[ing3alt]);
+          }
+        }
+      }
+    }
+  }
+
+  // so now comes the paperwork
+
+  // first let's sort the results -- fewest ingredients first, and fewer result
+  // effects earlier when ingredient counts are tied
+  results.sort(function(a, b)
+  {
+    if(a.length < b.length) return -1;
+    if(a.length > b.length) return 1;
+    var a_brew;
+    var b_brew;
+    if(a.length == 2)
+    {
+      a_brew = brew_test(a[0], a[1], -1);
+      b_brew = brew_test(b[0], b[1], -1);
+    }
+    else
+    {
+      a_brew = brew_test(a[0], a[1], a[2]);
+      b_brew = brew_test(b[0], b[1], b[2]);
+    }
+    if(a_brew.length < b_brew.length) return -1;
+    if(a_brew.length > b_brew.length) return 1;
+    return 0;
+  });
+
+  string_thing = "Results of searching for ";
+  if(strict)
+  {
+    if(which_way_strict)
+    {
+      string_thing += "ONLY NEGATIVE EFFECT POISONS";
+    }
+    else
+    {
+      string_thing += "ONLY POSITIVE EFFECT POTIONS";
+    }
+  }
+  else
+  {
+    string_thing += "ALL POTIONS OR POISONS";
+  }
+  string_thing += " with ";
+  if(exact)
+  {
+    string_thing += "EXACTLY";
+  }
+  else
+  {
+    string_thing += "AT LEAST";
+  }
+  string_thing += " these effects:";
+  output_real_ref.appendChild(document.createTextNode(string_thing));
+  output_real_ref.appendChild(document.createElement("br"));
+  // string_thing = "";
+  ul_ref = document.createElement("ul");
+  for(loop = 0; loop < effects_wanted.length; ++loop)
+  {
+    // if(loop > 0) string_thing += ", ";
+    // string_thing += effects_list[effects_wanted[loop]][0];
+    li_ref = document.createElement("li");
+    li_ref.appendChild(document.createTextNode(effects_list[effects_wanted[loop]][0]));
+    ul_ref.appendChild(li_ref);
+  }
+  output_real_ref.appendChild(ul_ref);
+
+  // output_real_ref.appendChild(document.createTextNode(string_thing));
+  // output_real_ref.appendChild(document.createElement("br"));
+  // output_real_ref.appendChild(document.createElement("br"));
+
+  if(results.length == 0)
+  {
+    output_real_ref.appendChild(document.createTextNode("No results found."));
+  }
+  else
+  {
+    string_thing = "";
+    string_thing += results.length;
+    string_thing += " result";
+    if(results.length > 1) string_thing += "s";
+    string_thing += " found:";
+    output_real_ref.appendChild(document.createTextNode(string_thing));
+
+    output_real_ref.appendChild(document.createElement("br"));
+    output_real_ref.appendChild(document.createElement("br"));
+
+    var table_ref;
+    var tr_ref;
+    var td_ref;
+    var ul_ref;
+    var li_ref;
+    var thing_ref;
+
+    var publish_results;
+
+    table_ref = document.createElement("table");
+    tr_ref = document.createElement("tr");
+    td_ref = document.createElement("td");
+
+    tr_ref.appendChild(td_ref);
+    table_ref.appendChild(tr_ref);
+
+    td_ref = document.createElement("td");
+    td_ref.className = "outtext";
+
+    thing_ref = document.createElement("span");
+    thing_ref.className = "ul";
+    thing_ref.appendChild(document.createTextNode("Ingredients"));
+    td_ref.appendChild(thing_ref);
+    tr_ref.appendChild(td_ref);
+
+    td_ref = document.createElement("td");
+    td_ref.className = "outtext";
+
+    thing_ref = document.createElement("span");
+    thing_ref.className = "ul";
+    thing_ref.appendChild(document.createTextNode("Results"));
+    td_ref.appendChild(thing_ref);
+    tr_ref.appendChild(td_ref);
+
+    table_ref.appendChild(tr_ref);
+
+    // let's use moreloop for the outer loop
+    for(moreloop = 0; moreloop < results.length; ++moreloop)
+    {
+      tr_ref = document.createElement("tr");
+
+      td_ref = document.createElement("td");
+      td_ref.className = "outcount";
+      string_thing = "";
+      string_thing += (moreloop + 1);
+      string_thing += ".";
+      td_ref.appendChild(document.createTextNode(string_thing));
+      tr_ref.appendChild(td_ref);
+
+      td_ref = document.createElement("td");
+      td_ref.className = "outtext";
+      ul_ref = document.createElement("ul");
+      ul_ref.className = "res";
+      for(loop = 0; loop < results[moreloop].length; ++loop)
+      {
+        li_ref = document.createElement("li");
+        li_ref.appendChild(document.createTextNode(ingreds_list[results[moreloop][loop]][0]));
+
+        // LET'S TRY SOMETHING
+        string_thing = ingreds_list[results[moreloop][loop]][0];
+        string_thing += ":\n";
+        string_thing += effects_list[ingreds_list[results[moreloop][loop]][1]][0];
+        string_thing += ", ";
+        string_thing += effects_list[ingreds_list[results[moreloop][loop]][2]][0];
+        string_thing += ", ";
+        string_thing += effects_list[ingreds_list[results[moreloop][loop]][3]][0];
+        string_thing += ", ";
+        string_thing += effects_list[ingreds_list[results[moreloop][loop]][4]][0];
+        li_ref.title = string_thing;
+        ul_ref.appendChild(li_ref);
+      }
+      td_ref.appendChild(ul_ref);
+      tr_ref.appendChild(td_ref);
+
+      td_ref = document.createElement("td");
+      td_ref.className = "outtext";
+      ul_ref = document.createElement("ul");
+      ul_ref.className = "res";
+      if((results[moreloop].length != 2) && (results[moreloop].length != 3))
+      {
+        alert("aw hecks!");
+        return;
+      }
+      if(results[moreloop].length == 2)
+      {
+        publish_results = brew_test(results[moreloop][0],
+          results[moreloop][1], -1);
+      }
+      else
+      {
+        publish_results = brew_test(results[moreloop][0],
+          results[moreloop][1], results[moreloop][2]);
+      }
+      for(loop = 0; loop < publish_results.length; ++loop)
+      {
+        li_ref = document.createElement("li");
+        li_ref.appendChild(document.createTextNode(effects_list[publish_results[loop]][0]));
+        ul_ref.appendChild(li_ref);
+      }
+      td_ref.appendChild(ul_ref);
+
+      tr_ref.appendChild(td_ref);
+      table_ref.appendChild(tr_ref);
+    }
+
+    output_real_ref.appendChild(table_ref);
+  }
+
+  input_div_ref.setAttribute("hidden", "");
+  output_container_ref.removeAttribute("hidden");
+  results_button_ref.removeAttribute("disabled");
+}
+
+
+// send this one indexes into ingreds_list; ingred3 can be an invalid index
+// (such as -1) to indicate "not present"
+// returns an array of indexes into effects_list representing brew results
+function brew_test(ingred1, ingred2, ingred3)
+{
+  var use_third = false;
+  if(!is_valid_ingred_index(ingred1)) return [];
+  if(!is_valid_ingred_index(ingred2)) return [];
+  if(is_valid_ingred_index(ingred3)) use_third = true;
+
+  var raw_pile = [];
+  var loop;
+  var spot;
+  var stale;
+  var refined_pile = [];
+
+  for(loop = 1; loop < ingreds_list[ingred1].length; ++loop)
+  {
+    raw_pile.push((ingreds_list[ingred1])[loop]);
+  }
+  for(loop = 1; loop < ingreds_list[ingred2].length; ++loop)
+  {
+    raw_pile.push((ingreds_list[ingred2])[loop]);
+  }
+  if(use_third)
+  {
+    for(loop = 1; loop < ingreds_list[ingred3].length; ++loop)
+    {
+      raw_pile.push((ingreds_list[ingred3])[loop]);
+    }
+  }
+
+  raw_pile.sort(function(a, b)
+  {
+    return (Number(a) - Number(b));
+  });
+
+  spot = -1;
+  stale = false;
+  for(loop = 0; loop < raw_pile.length; ++loop)
+  {
+    if(raw_pile[loop] != spot)
+    {
+      stale = false;
+    }
+    else
+    {
+      // it's the same effect listed twice in a row!  but make sure that if
+      // it's there more than twice that it's only counted once
+      if(!stale)
+      {
+        refined_pile.push(raw_pile[loop]);
+        stale = true;
+      }
+    }
+
+    spot = raw_pile[loop];
+  }
+
+  return refined_pile;
+}
+
+
+function is_valid_ingred_index(what)
+{
+  if(isNaN(what)) return false;
+  if(Math.round(what) != what) return false;
+  if(what < 0) return false;
+  if(what >= ingreds_list.length) return false;
+  return true;
+}
+
+function is_valid_effects_index(what)
+{
+  if(isNaN(what)) return false;
+  if(Math.round(what) != what) return false;
+  if(what < 0) return false;
+  if(what >= effects_list.length) return false;
+  return true;
+}
+
+
+// check for positive effects
+// mixture: array of indexes into effects_list
+// returns boolean: true if it does; false if it doesn't
+function does_it_have_pos_effects(mixture)
+{
+  if(!Array.isArray(mixture))
+  {
+    alert("that is not an array");
+    return false;
+  }
+
+  var loop;
+  for(loop = 0; loop < mixture.length; ++loop)
+  {
+    if(!is_valid_effects_index(mixture[loop]))
+    {
+      alert("bad effects index");
+      return false;
+    }
+    if(!effects_list[mixture[loop]][1]) return true;
+  }
+  return false;
+}
+
+// same as above but check for negative effects
+function does_it_have_neg_effects(mixture)
+{
+  if(!Array.isArray(mixture))
+  {
+    alert("that is not an array");
+    return false;
+  }
+
+  var loop;
+  for(loop = 0; loop < mixture.length; ++loop)
+  {
+    if(!is_valid_effects_index(mixture[loop]))
+    {
+      alert("bad effects index");
+      return false;
+    }
+    if(effects_list[mixture[loop]][1]) return true;
+  }
+  return false;
+}
+
+
+// let's test compliance with requested recipe
+
+// reqs: array of indexes into effects_list indicating requested effects
+// mixture: array of indexes into effects_list indicating what's in this potion
+// returns boolean: true for yes, mixture has at least those effects; false nope
+function is_it_at_least(reqs, mixture)
+{
+  if(!Array.isArray(mixture))
+  {
+    alert("that is not an array");
+    return false;
+  }
+  if(!Array.isArray(reqs))
+  {
+    alert("that is not an array either");
+    return false;
+  }
+
+  var loop;
+  for(loop = 0; loop < reqs.length; ++loop)
+  {
+    if(mixture.indexOf(reqs[loop]) < 0) return false;
+  }
+  return true;
+}
+
+// same as above but for exact, not at least
+function is_it_exact(reqs, mixture)
+{
+  // hey look I have half of that check written already!
+  if(!is_it_at_least(reqs, mixture)) return false;
+
+  // the other half is making sure all effects in mixture are also in reqs
+  var loop;
+  for(loop = 0; loop < mixture.length; ++loop)
+  {
+    if(reqs.indexOf(mixture[loop]) < 0) return false;
+  }
+  return true;
+}
+
+
+function back_to_inputs()
+{
+  var outs = document.getElementById("outputs_div");
+  var ins = document.getElementById("inputs_div");
+  if((outs == null) || (ins == null))
+  {
+    alert("something nulled");
+    return;
+  }
+  outs.setAttribute("hidden", "");
+  ins.removeAttribute("hidden");
+}
+
+
+// the test routine that the searchimify function will need more than once
+// reqs: array of indexes into effects_list representing desired effects
+// mixture: array of indexes into effects_list that the potion got
+// strict, which_way_strict, exact: all booleans, passed directly from that fn
+// returns a boolean: true if mixture passed tests; false if not
+function test_it(reqs, mixture, strict, which_way_strict, exact)
+{
+  if(!(Array.isArray(reqs) && Array.isArray(mixture)))
+  {
+    alert("bad stuff");
+    return;
+  }
+
+  if(exact)
+  {
+    if(!is_it_exact(reqs, mixture)) return false;
+  }
+  else
+  {
+    if(!is_it_at_least(reqs, mixture)) return false;
+  }
+
+  if(strict)
+  {
+    if(which_way_strict)
+    {
+      // poisons only, so positive effects disqualify
+      if(does_it_have_pos_effects(mixture)) return false;
+    }
+    else
+    {
+      // poisonous effects disqualify
+      if(does_it_have_neg_effects(mixture)) return false;
+    }
+  }
+
+  return true;
+
+  // well that wasn't too bad, but it would've been a pain to type out
+  // several times without return shortcuts
+}
+
+
+function show_results()
+{
+  var in_ref;
+  var out_ref;
+
+  in_ref = document.getElementById("inputs_div");
+  out_ref = document.getElementById("outputs_div");
+
+  if((in_ref == null) || (out_ref == null))
+  {
+    alert("whoopsey");
+    return;
+  }
+
+  in_ref.setAttribute("hidden", "");
+  out_ref.removeAttribute("hidden");
+}
+
+
+// ingredient filter quick settings
+// which: 0 == none; 1 == defaults; 2 == defaults (no dupes); 3 == all
+//   other values are ignored and the function returns without changing anything
+function ing_sel(which)
+{
+  var loop;
+  var ref;
+  var string_thing;
+
+  if(typeof(which) != typeof(0)) return;
+  if(isNaN(which)) return;
+  if(Math.round(which) != which) return;
+  if((which < 0) || (which > 3)) return;
+
+  for(loop = 0; loop < ingreds_list.length; ++loop)
+  {
+    string_thing = "ingfil_";
+    string_thing += loop;
+    ref = document.getElementById(string_thing);
+    if(ref == null)
+    {
+      alert("whoopseeze");
+      return;
+    }
+    if(which == 0)
+    {
+      ref.checked = false;
+    }
+    else
+    {
+      ref.checked = true;
+    }
+  }
+
+  if((which == 0) || (which == 3)) return;
+
+  var unchecks = [];
+  unchecks.push(48);
+  unchecks.push(49);
+  unchecks.push(109);
+  unchecks.push(110);
+  unchecks.push(111);
+  unchecks.push(112);
+
+  if(which == 2)
+  {
+    unchecks.push(87);
+    unchecks.push(45);
+    unchecks.push(1);
+    unchecks.push(16);
+  }
+
+  for(loop = 0; loop < unchecks.length; ++loop)
+  {
+    string_thing = "ingfil_";
+    string_thing += unchecks[loop];
+    ref = document.getElementById(string_thing);
+    if(ref == null)
+    {
+      alert("aw what now?");
+      return;
+    }
+    ref.checked = false;
+  }
+}
+
+
+function show_filter()
+{
+  var show_button_ref = document.getElementById("show_filter_button");
+  var hide_button_ref = document.getElementById("hide_filter_button");
+  var list_ref = document.getElementById("ingreds_filter_list");
+
+  if((show_button_ref == null) || (hide_button_ref == null) || (list_ref == null))
+  {
+    alert("ref hecked");
+    return;
+  }
+  show_button_ref.setAttribute("hidden", "");
+  hide_button_ref.removeAttribute("hidden");
+  list_ref.removeAttribute("hidden");
+}
+
+function hide_filter()
+{
+  var show_button_ref = document.getElementById("show_filter_button");
+  var hide_button_ref = document.getElementById("hide_filter_button");
+  var list_ref = document.getElementById("ingreds_filter_list");
+
+  if((show_button_ref == null) || (hide_button_ref == null) || (list_ref == null))
+  {
+    alert("ref hecked");
+    return;
+  }
+  show_button_ref.removeAttribute("hidden");
+  hide_button_ref.setAttribute("hidden", "");
+  list_ref.setAttribute("hidden", "");
+}
+
+
+</script>
+
+</head>
+
+<body onload = "sanity_checks()">
+Shmoot's Skyrim Alchemy Brew Lab<br><br>
+So that I don't have to go to <a href = "https://uesp.net" target = "_blank">UESP</a> every time I want to recall the best recipe for a potion<br><br>
+(This tool does not take effect strength or duration into account.)<br><br>
+February, 2020
+<br><br><br>
+<div id = "inputs_div">
+Search for
+<select id = "what_kind_select">
+  <option>all potions or poisons</option>
+  <option>potions with only positive effects</option>
+  <option>poisons with only negative effects</option>
+</select>
+that have
+<select id = "exacts_select">
+  <option>at least</option>
+  <option>exactly</option>
+</select>
+these effects:
+<br><br>
+<table><tr>
+  <td class = "that_one">
+    <span class = "ul">Attributes</span><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_00"> Restore Health</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_01"> Restore Magicka</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_02"> Restore Stamina</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_03"> Fortify Health</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_04"> Fortify Magicka</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_05"> Fortify Stamina</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_06"> Regenerate Health</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_07"> Regenerate Magicka</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_08"> Regenerate Stamina</label><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_09"> Damage Health</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_10"> Damage Magicka</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_11"> Damage Stamina</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_12"> Ravage Health</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_13"> Ravage Magicka</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_14"> Ravage Stamina</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_15"> Damage Magicka Regen</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_16"> Damage Stamina Regen</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_17"> Lingering Damage Health</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_18"> Lingering Damage Magicka</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_19"> Lingering Damage Stamina</label>
+  </td>
+  <td class = "most"><span class = "ul">Skills</span><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_20"> Fortify Alteration</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_21"> Fortify Barter</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_22"> Fortify Block</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_24"> Fortify Conjuration</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_25"> Fortify Destruction</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_26"> Fortify Enchanting</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_27"> Fortify Heavy Armor</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_28"> Fortify Illusion</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_29"> Fortify Light Armor</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_30"> Fortify Lockpicking</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_31"> Fortify Marksman</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_32"> Fortify One-Handed</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_33"> Fortify Pickpocket</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_34"> Fortify Restoration</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_35"> Fortify Smithing</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_36"> Fortify Sneak</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_37"> Fortify Two-Handed</label>
+  </td>
+  <td class = "most"><span class = "ul">Resistances/Weaknesses</span><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_38"> Resist Fire</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_39"> Resist Frost</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_40"> Resist Shock</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_41"> Resist Magic</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_42"> Resist Poison</label><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_43"> Weakness to Fire</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_44"> Weakness to Frost</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_45"> Weakness to Shock</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_46"> Weakness to Magic</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_47"> Weakness to Poison</label>
+  </td>
+  <td class = "most"><span class = "ul">Other</span><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_48"> Cure Disease</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_23"> Fortify Carry Weight</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_51"> Invisibility</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_54"> Waterbreathing</label><br><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_49"> Fear</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_50"> Frenzy</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_52"> Paralysis</label><br>
+    <label><input type = "checkbox" class = "effbox" id = "eff_53"> Slow</label>
+  </td>
+</tr></table>
+<br>
+<button id = "clear_button" onclick = "clear_checks()">Clear checkmarks</button>
+<br><br>
+<table><tr><td style = "border:1px solid black;padding:2px">
+  Ingredients filter <button id = "show_filter_button" onclick = "show_filter()">Show</button><button id = "hide_filter_button" onclick = "hide_filter()" hidden>Hide</button>
+  <div id = "ingreds_filter_list" hidden>
+    <br>Consider the following ingredients for the search:
+    <br><br>
+    <span class = "ul">Subjectively Common</span><br>
+    <label><input type = "checkbox" id = "ingfil_0"></label><br>
+    <label><input type = "checkbox" id = "ingfil_2"></label><br>
+    <label><input type = "checkbox" id = "ingfil_3"></label><br>
+    <label><input type = "checkbox" id = "ingfil_5"></label><br>
+    <label><input type = "checkbox" id = "ingfil_6"></label><br>
+    <label><input type = "checkbox" id = "ingfil_7"></label><br>
+    <label><input type = "checkbox" id = "ingfil_8"></label><br>
+    <label><input type = "checkbox" id = "ingfil_9"></label><br>
+    <label><input type = "checkbox" id = "ingfil_10"></label><br>
+    <label><input type = "checkbox" id = "ingfil_12"></label><br>
+    <label><input type = "checkbox" id = "ingfil_13"></label><br>
+    <label><input type = "checkbox" id = "ingfil_15"></label><br>
+    <label><input type = "checkbox" id = "ingfil_18"></label><br>
+    <label><input type = "checkbox" id = "ingfil_20"></label><br>
+    <label><input type = "checkbox" id = "ingfil_22"></label><br>
+    <label><input type = "checkbox" id = "ingfil_23"></label><br>
+    <label><input type = "checkbox" id = "ingfil_24"></label><br>
+    <label><input type = "checkbox" id = "ingfil_27"></label><br>
+    <label><input type = "checkbox" id = "ingfil_28"></label><br>
+    <label><input type = "checkbox" id = "ingfil_30"></label><br>
+    <label><input type = "checkbox" id = "ingfil_34"></label><br>
+    <label><input type = "checkbox" id = "ingfil_35"></label><br>
+    <label><input type = "checkbox" id = "ingfil_38"></label><br>
+    <label><input type = "checkbox" id = "ingfil_39"></label><br>
+    <label><input type = "checkbox" id = "ingfil_42"></label><br>
+    <label><input type = "checkbox" id = "ingfil_46"></label><br>
+    <label><input type = "checkbox" id = "ingfil_50"></label><br>
+    <label><input type = "checkbox" id = "ingfil_51"></label><br>
+    <label><input type = "checkbox" id = "ingfil_52"></label><br>
+    <label><input type = "checkbox" id = "ingfil_53"></label><br>
+    <label><input type = "checkbox" id = "ingfil_54"></label><br>
+    <label><input type = "checkbox" id = "ingfil_55"></label><br>
+    <label><input type = "checkbox" id = "ingfil_56"></label><br>
+    <label><input type = "checkbox" id = "ingfil_58"></label><br>
+    <label><input type = "checkbox" id = "ingfil_59"></label><br>
+    <label><input type = "checkbox" id = "ingfil_60"></label><br>
+    <label><input type = "checkbox" id = "ingfil_61"></label><br>
+    <label><input type = "checkbox" id = "ingfil_62"></label><br>
+    <label><input type = "checkbox" id = "ingfil_64"></label><br>
+    <label><input type = "checkbox" id = "ingfil_66"></label><br>
+    <label><input type = "checkbox" id = "ingfil_69"></label><br>
+    <label><input type = "checkbox" id = "ingfil_70"></label><br>
+    <label><input type = "checkbox" id = "ingfil_71"></label><br>
+    <label><input type = "checkbox" id = "ingfil_72"></label><br>
+    <label><input type = "checkbox" id = "ingfil_73"></label><br>
+    <label><input type = "checkbox" id = "ingfil_75"></label><br>
+    <label><input type = "checkbox" id = "ingfil_76"></label><br>
+    <label><input type = "checkbox" id = "ingfil_77"></label><br>
+    <label><input type = "checkbox" id = "ingfil_78"></label><br>
+    <label><input type = "checkbox" id = "ingfil_81"></label><br>
+    <label><input type = "checkbox" id = "ingfil_83"></label><br>
+    <label><input type = "checkbox" id = "ingfil_86"></label><br>
+    <label><input type = "checkbox" id = "ingfil_87"></label><br>
+    <label><input type = "checkbox" id = "ingfil_88"></label><br>
+    <label><input type = "checkbox" id = "ingfil_89"></label><br>
+    <label><input type = "checkbox" id = "ingfil_90"></label><br>
+    <label><input type = "checkbox" id = "ingfil_91"></label><br>
+    <label><input type = "checkbox" id = "ingfil_92"></label><br>
+    <label><input type = "checkbox" id = "ingfil_94"></label><br>
+    <label><input type = "checkbox" id = "ingfil_95"></label><br><br>
+
+    <span class = "ul">Subjectively Uncommon</span><br>
+    <label><input type = "checkbox" id = "ingfil_4"></label><br>
+    <label><input type = "checkbox" id = "ingfil_11"></label><br>
+    <label><input type = "checkbox" id = "ingfil_14"></label><br>
+    <label><input type = "checkbox" id = "ingfil_17"></label><br>
+    <label><input type = "checkbox" id = "ingfil_19"></label><br>
+    <label><input type = "checkbox" id = "ingfil_21"></label><br>
+    <label><input type = "checkbox" id = "ingfil_25"></label><br>
+    <label><input type = "checkbox" id = "ingfil_26"></label><br>
+    <label><input type = "checkbox" id = "ingfil_29"></label><br>
+    <label><input type = "checkbox" id = "ingfil_31"></label><br>
+    <label><input type = "checkbox" id = "ingfil_32"></label><br>
+    <label><input type = "checkbox" id = "ingfil_33"></label><br>
+    <label><input type = "checkbox" id = "ingfil_37"></label><br>
+    <label><input type = "checkbox" id = "ingfil_40"></label><br>
+    <label><input type = "checkbox" id = "ingfil_41"></label><br>
+    <label><input type = "checkbox" id = "ingfil_43"></label><br>
+    <label><input type = "checkbox" id = "ingfil_44"></label><br>
+    <label><input type = "checkbox" id = "ingfil_47"></label><br>
+    <label><input type = "checkbox" id = "ingfil_57"></label><br>
+    <label><input type = "checkbox" id = "ingfil_63"></label><br>
+    <label><input type = "checkbox" id = "ingfil_65"></label><br>
+    <label><input type = "checkbox" id = "ingfil_68"></label><br>
+    <label><input type = "checkbox" id = "ingfil_79"></label><br>
+    <label><input type = "checkbox" id = "ingfil_80"></label><br>
+    <label><input type = "checkbox" id = "ingfil_82"></label><br>
+    <label><input type = "checkbox" id = "ingfil_84"></label><br>
+    <label><input type = "checkbox" id = "ingfil_85"></label><br>
+    <label><input type = "checkbox" id = "ingfil_93"></label><br>
+    <label><input type = "checkbox" id = "ingfil_96"></label><br><br>
+
+    <span class = "ul">Quest/Subjectively Rare/Icky</span><br>
+    <label><input type = "checkbox" id = "ingfil_48"></label><br>
+    <label><input type = "checkbox" id = "ingfil_49"></label><br>
+    <label><input type = "checkbox" id = "ingfil_109"></label><br>
+    <label><input type = "checkbox" id = "ingfil_110"></label><br>
+    <label><input type = "checkbox" id = "ingfil_111"></label><br>
+    <label><input type = "checkbox" id = "ingfil_112"></label><br><br>
+
+    <span class = "ul">Dawnguard</span><br>
+    <label><input type = "checkbox" id = "ingfil_1"></label><br>
+    <label><input type = "checkbox" id = "ingfil_16"></label><br>
+    <label><input type = "checkbox" id = "ingfil_36"></label><br>
+    <label><input type = "checkbox" id = "ingfil_67"></label><br>
+    <label><input type = "checkbox" id = "ingfil_97"></label><br><br>
+
+    <span class = "ul">Hearthfire</span><br>
+    <label><input type = "checkbox" id = "ingfil_45"></label><br>
+    <label><input type = "checkbox" id = "ingfil_74"></label><br><br>
+
+    <span class = "ul">Dragonborn</span><br>
+    <label><input type = "checkbox" id = "ingfil_98"></label><br>
+    <label><input type = "checkbox" id = "ingfil_99"></label><br>
+    <label><input type = "checkbox" id = "ingfil_100"></label><br>
+    <label><input type = "checkbox" id = "ingfil_101"></label><br>
+    <label><input type = "checkbox" id = "ingfil_102"></label><br>
+    <label><input type = "checkbox" id = "ingfil_103"></label><br>
+    <label><input type = "checkbox" id = "ingfil_104"></label><br>
+    <label><input type = "checkbox" id = "ingfil_105"></label><br>
+    <label><input type = "checkbox" id = "ingfil_106"></label><br>
+    <label><input type = "checkbox" id = "ingfil_107"></label><br>
+    <label><input type = "checkbox" id = "ingfil_108"></label><br><br>
+
+    Quick selection controls:<br>
+    <button onclick = "ing_sel(0)">None</button><button onclick = "ing_sel(1)">Default</button><button onclick = "ing_sel(2)">Default (no dupes)</button><button onclick = "ing_sel(3)">All</button>
+  </div>
+</td></tr></table>
+<br>
+<button id = "search_button" onclick = "heckyeahsearch()">Search!</button>
+<button id = "results_button" disabled onclick = "show_results()">Show most recent results</button>
+</div>
+
+<div id = "outputs_div" hidden>
+  <button id = "back_to_inputs_button" onclick = "back_to_inputs()">Back to inputs</button>
+  <br><br>
+  <div id = "real_results_div"></div>
+</div>
+
+</body>
+
+</html>
