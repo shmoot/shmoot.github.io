@@ -11,6 +11,9 @@ Starting this one off right, with change notes right from the beginning.
 2020/02/17: Oh good, I did think up more: started adding an ingredients filter.
 
 2020/08/18: Finished adding the ingredients filter.
+
+2020/03/15: Oh yeah: crimson nirnroot should be disabled when selecting the
+"no dupes" filter preset.
 -->
 
 <head>
@@ -1109,6 +1112,7 @@ function ing_sel(which)
     unchecks.push(45);
     unchecks.push(1);
     unchecks.push(16);
+    unchecks.push(19);
   }
 
   for(loop = 0; loop < unchecks.length; ++loop)
