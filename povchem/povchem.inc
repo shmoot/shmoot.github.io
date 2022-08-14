@@ -2057,7 +2057,7 @@ difference
 }
 
 // 66 Dysprosium
-#declare Dy_base = sphere {<0, 0, 0>, (atom_min_radius + (((6 - 1) / 108) * (atom_max_radius - atom_min_radius)))}
+#declare Dy_base = sphere {<0, 0, 0>, (atom_min_radius + (((66 - 1) / 108) * (atom_max_radius - atom_min_radius)))}
 #declare Dy_letter = text {ttf "cyrvetic.ttf" "Dy" 20 0 scale 0.55 translate <-0.5 + 0.22, -0.5 + 0.3, -5>}
 #declare Dy_atom = union
 {
@@ -2734,7 +2734,7 @@ difference
 }
 
 // 91 Uranium
-#declare U_base = sphere {<0, 0, 0>, (atom_min_radius + (((91 - 1) / 108) * (atom_max_radius - atom_min_radius)))}
+#declare U_base = sphere {<0, 0, 0>, (atom_min_radius + (((92 - 1) / 108) * (atom_max_radius - atom_min_radius)))}
 #declare U_letter = text {ttf "cyrvetic.ttf" "U" 20 0 scale 0.7 translate <-0.5 + 0.309, -0.5 + 0.24, -5>}
 #declare U_atom = union
 {
