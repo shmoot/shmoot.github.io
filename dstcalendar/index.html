@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<meta charset = "UTF-8">
+
+<title>Shmoot's Don't Starve Together Calendar</title>
+
+<style>
+
+body
+{
+  color: black;
+  background-color: white;
+}
+
+.settings
+{
+  margin-top: 4px;
+  margin-bottom: 4px;
+  border: 1px solid black;
+  padding: 2px;
+}
+
+.emph {font-weight: bold;}
+.autumn {background-color: #ffc000;}
+.winter {background-color: #c0e0ff;}
+.spring {background-color: #40ff40;}
+.summer {background-color: #ff4840;}
+.new_moon {background-color: #808080;}
+.full_moon {color: #ffffff; background-color: #000060;}
+
+.calendar_container {float: right; text-align: center;}
+ul {margin: 0;}
+
+table
+{
+  border-spacing: 0;
+  border-style: solid;
+  border-width: 2px;
+  border-color: white;
+}
+td
+{
+  border-style: solid;
+  border-width: 1px;
+  border-color: white;
+  padding: 2px;
+  text-align: right;
+}
+td.selected {border-color: black;}
+
+</style>
+
+<script>
+
+// globals
+let date_base = null;  // Date object to remember when day was changed
+let day_base = null;  // in-game day set at date_base
+let timer_ref = null;  // returned from setInterval;
+let stored_day = null;  // store day; if invalid entry, restore from this
+let autumn_length = null;  // stored season lengths (index into that select)
+let winter_length = null;
+let spring_length = null;
+let summer_length = null;
+const AUTUMNS = [0, 5, 12, 20, 30, 50];
+const WINTERS = [0, 5, 10, 15, 22, 40];
+const SPRINGS = [0, 5, 12, 20, 30, 50];
+const SUMMERS = [0, 5, 10, 15, 22, 40];
+let moon_base = null;  // the day, modulo 20, on which a new moon falls
+let stored_year = null;  // a couple things to check to see whether we
+let stored_day_of_year = null;  // need to redraw the calendar
+
+function settings()
+{
+  let ref = document.getElementById("settings_container");
+  if(ref == null) return;
+  if(ref.hasAttribute("hidden")) ref.removeAttribute("hidden");
+  else ref.setAttribute("hidden", "");
+}
+
+
+// what: the thing to test whether it's a good number
+// lb: Number -- the desired lower bound: "what" may not be less than this
+// returns a Number on success, null on failure
+function verify_num(what, lb)
+{
+  if(isNaN(what)) return null;
+  if(isNaN(lb)) return null;
+  let bloop = Number(what);
+  if(!Number.isSafeInteger(bloop)) return null;
+  if(bloop < lb) return null;
+  return bloop;
+}
+
+
+function load_function()
+{
+  let ref;
+  date_base = new Date();
+  ref = document.getElementById("day_input");
+  if(ref == null) {alert("load 1"); return;}
+  day_base = verify_num(ref.value, 1);
+  if(day_base == null) {alert("load 2"); return;}
+  stored_day = day_base;
+  
+  ref = document.getElementById("moon_offset");
+  if(ref == null) {alert("load 3"); return;}
+  moon_base = verify_num(ref.value, 1);
+  if(moon_base == null) {alert("load 4"); return;}
+  ref = document.getElementById("moon_offset_select");
+  if(ref == null) {alert("load 5"); return;}
+  if(ref.selectedIndex != 0) moon_base += 10;
+  moon_base = (moon_base % 20);
+  
+  ref = document.getElementById("autumn_length_select");
+  if(ref == null) {alert("load 6"); return;}
+  autumn_length = ref.selectedIndex;
+  ref = document.getElementById("winter_length_select");
+  if(ref == null) {alert("load 7"); return;}
+  winter_length = ref.selectedIndex;
+  ref = document.getElementById("spring_length_select");
+  if(ref == null) {alert("load 8"); return;}
+  spring_length = ref.selectedIndex;
+  ref = document.getElementById("summer_length_select");
+  if(ref == null) {alert("load 9"); return;}
+  summer_length = ref.selectedIndex;
+  
+  reset_date();
+}
+
+// called when the user changes the date -- resets the timer and everything
+function reset_date()
+{
+  let input_ref;
+  let prog_reff;
+  let pre_check_day;
+  
+  input_ref = document.getElementById("day_input");
+  if(input_ref == null)
+  {
+    alert("reset_bork 1");
+    return;
+  }
+  
+  // verify the input before we start changing stuff
+  pre_check_day = verify_num(input_ref.value, 1);
+  if(pre_check_day == null)
+  {
+    input_ref.value = stored_day;
+    return;
+  }
+  day_base = pre_check_day;
+  stored_day = pre_check_day;
+  
+  if(timer_ref != null) clearInterval(timer_ref);
+  
+  if(up_date(false))
+  {
+    date_base = new Date();
+    timer_ref = setInterval(tick, 1000);
+    prog_reff = document.getElementById("day_progress");
+    if(prog_reff == null)
+    {
+      clearInterval(timer_ref);
+      alert("reset bork 2");
+      return;
+    }
+    prog_reff.value = 0;
+  }
+}
+
+
+function tick()
+{
+  if(timer_ref == null)
+  {
+    alert("tick bork 1");
+    return;
+  }
+  if((date_base == null) || (stored_day == null) || (day_base == null))
+  {
+    clearInterval(timer_ref);
+    alert("tick bork 2 " + date_base + " " + stored_day + " " + day_base);
+    return;
+  }
+  
+  let day_ref = document.getElementById("day_input");
+  if(day_ref == null)
+  {
+    clearInterval(timer_ref);
+    alert("tick bork 3");
+    return;
+  }
+  
+  let prog_reff = document.getElementById("day_progress");
+  if(prog_reff == null)
+  {
+    clearInterval(timer_ref);
+    alert("tick bork 5");
+    return;
+  }
+  
+  let right_now = new Date();  // check this so it accounts for
+    // any setInterval drift
+  if(right_now < date_base)
+  {
+    clearInterval(timer_ref);
+    alert("tick bork 6");
+    return;
+  }
+  
+  if(verify_num(day_base, 1) == null)
+  {
+    clearInterval(timer_ref);
+    alert("tick bork 7");
+    return;
+  }
+  
+  let this_interval = Math.floor((right_now - date_base) / 1000);
+  let days_up = 0;
+  let threshold = ((stored_day + 1) - day_base) * 480;
+  prog_reff.value = (this_interval % 480);
+  if(this_interval >= threshold)
+  {
+    days_up = Math.floor(this_interval / threshold);
+    stored_day += days_up;
+    day_ref.value = stored_day;
+    if(!up_date(false))
+    {
+      clearInterval(timer_ref);
+      alert("tick bork 8");
+      return;
+    }
+  }
+}
+
+
+// so the date has changed, but we don't need to do anything drastic like
+// reset the timer -- maybe just a couple lines of text and move a mark on
+// the calendar... hopefully we won't have to re-draw the whole calendar but
+// we'd better check to make sure
+// force_redraw: boolean -- true == force calendar to redraw; false == just
+//   update the highlight mark and only redraw if necessary
+// returns a boolean -- true if everything went well; false on error
+function up_date(force_redraw)
+{
+  if(typeof(force_redraw) != typeof(false)) {alert("up_date 1"); return false;}
+  if((verify_num(day_base, 1) == null) ||
+    (verify_num(stored_day, 1) == null) ||
+    (verify_num(moon_base, 0) == null) ||
+    (verify_num(autumn_length, 0) == null) ||
+    (verify_num(winter_length, 0) == null) ||
+    (verify_num(spring_length, 0) == null) ||
+    (verify_num(summer_length, 0) == null))
+  {
+    alert("up_date 2");
+    return false;
+  }
+  if((day_base == null) || (stored_day == null) || (moon_base == null) ||
+    (autumn_length >= AUTUMNS.length) || (winter_length >= WINTERS.length) ||
+    (spring_length >= SPRINGS.length) || (summer_length >= SUMMERS.length))
+  {
+    alert("up_date 3");
+    return false;
+  }
+  
+  let year_length = (AUTUMNS[autumn_length] + WINTERS[winter_length] +
+    SPRINGS[spring_length] + SUMMERS[summer_length]);
+  let current_year = Math.ceil(stored_day / year_length);
+  let current_day_of_year = (stored_day % year_length);
+  if(current_day_of_year == 0) current_day_of_year = year_length;
+  
+  let day_of_year_ref = document.getElementById("li_day_of_year");
+  let day_of_season_ref = document.getElementById("li_day_of_season");
+  let next_season_ref = document.getElementById("li_next_season");
+  let full_moon_ref = document.getElementById("li_full_moon");
+  let new_moon_ref = document.getElementById("li_new_moon");
+  let next_year_ref = document.getElementById("li_next_year");
+  if((day_of_year_ref == null) || (day_of_season_ref == null) ||
+    (next_season_ref == null) || (full_moon_ref == null) ||
+    (new_moon_ref == null) || (next_year_ref == null))
+  {
+    alert("up_date 4");
+    return false;
+  }
+  
+  while(day_of_year_ref.hasChildNodes())
+  {
+    day_of_year_ref.removeChild(day_of_year_ref.firstChild);
+  }
+  while(day_of_season_ref.hasChildNodes())
+  {
+    day_of_season_ref.removeChild(day_of_season_ref.firstChild);
+  }
+  while(next_season_ref.hasChildNodes())
+  {
+    next_season_ref.removeChild(next_season_ref.firstChild);
+  }
+  while(full_moon_ref.hasChildNodes())
+  {
+    full_moon_ref.removeChild(full_moon_ref.firstChild);
+  }
+  while(new_moon_ref.hasChildNodes())
+  {
+    new_moon_ref.removeChild(new_moon_ref.firstChild);
+  }
+  while(next_year_ref.hasChildNodes())
+  {
+    next_year_ref.removeChild(next_year_ref.firstChild);
+  }
+  
+  let string_thing;
+  let calc_val;
+  let sub_ref;
+  
+  day_of_year_ref.appendChild(document.createTextNode("It is the "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = "";
+  string_thing += current_day_of_year;
+  string_thing += suffix(current_day_of_year);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  day_of_year_ref.appendChild(sub_ref);
+  day_of_year_ref.appendChild(document.createTextNode(" day of "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = "year ";
+  string_thing += current_year;
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  day_of_year_ref.appendChild(sub_ref);
+  day_of_year_ref.appendChild(document.createTextNode("."));
+  
+  day_of_season_ref.appendChild(document.createTextNode("It is the "));
+  calc_val = current_day_of_year;
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = figure_season(current_day_of_year, false, false);
+  if(string_thing != "autumn")
+  {
+    if(string_thing == "winter")
+    {
+      calc_val -= AUTUMNS[autumn_length];
+    }
+    else if(string_thing == "spring")
+    {
+      calc_val -= (AUTUMNS[autumn_length] + WINTERS[winter_length]);
+    }
+    else if(string_thing == "summer")
+    {
+      calc_val -= (year_length - SUMMERS[summer_length]);
+    }
+    else
+    {
+      alert("up_date 5");
+      return false;
+    }
+  }
+  sub_ref.appendChild(document.createTextNode(
+    "" + calc_val + suffix(calc_val)));
+  day_of_season_ref.appendChild(sub_ref);
+  day_of_season_ref.appendChild(document.createTextNode(" day of "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  sub_ref.classList.add(string_thing);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  day_of_season_ref.appendChild(sub_ref);
+  day_of_season_ref.appendChild(document.createTextNode("."));
+  
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  let str_next_season = figure_season(current_day_of_year, true, true);
+  if(str_next_season.length <= 0)
+  {
+    alert("up_date 6");
+    return false;
+  }
+  sub_ref.appendChild(document.createTextNode(str_next_season));
+  str_next_season = str_next_season.toLowerCase();
+  sub_ref.classList.add(str_next_season);
+  next_season_ref.appendChild(sub_ref);
+  if(str_next_season == string_thing)
+  {
+    next_season_ref.appendChild(document.createTextNode(
+      " will be the next season, too, because there aren\'t any others."));
+  }
+  else
+  {
+    if(str_next_season == "autumn")
+    {
+      calc_val = 1;
+    }
+    else if(str_next_season == "winter")
+    {
+      calc_val = (AUTUMNS[autumn_length] + 1);
+    }
+    else if(str_next_season == "spring")
+    {
+      calc_val = (AUTUMNS[autumn_length] + WINTERS[winter_length] + 1);
+    }
+    else if(str_next_season == "summer")
+    {
+      calc_val = ((year_length - SUMMERS[summer_length]) + 1);
+    }
+    else
+    {
+      alert("up_date 7");
+      return false;
+    }
+    
+    if(calc_val <= current_day_of_year)
+    {
+      calc_val += year_length;
+    }
+    calc_val -= current_day_of_year;
+    
+    string_thing = " will begin ";
+    if(calc_val != 1) string_thing += "in ";
+    next_season_ref.appendChild(document.createTextNode(string_thing));
+    sub_ref = document.createElement("span");
+    sub_ref.classList.add("emph");
+    if(calc_val == 1) string_thing = "tomorrow";
+    else
+    {
+      string_thing = "";
+      string_thing += calc_val;
+      string_thing += " days";
+    }
+    sub_ref.appendChild(document.createTextNode(string_thing));
+    next_season_ref.appendChild(sub_ref);
+    next_season_ref.appendChild(document.createTextNode(", on "));
+    calc_val += stored_day;
+    sub_ref = document.createElement("span");
+    sub_ref.classList.add("emph");
+    sub_ref.appendChild(document.createTextNode("day " + calc_val));
+    next_season_ref.appendChild(sub_ref);
+    next_season_ref.appendChild(document.createTextNode("."));
+  }
+  
+  full_moon_ref.appendChild(document.createTextNode("The next "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("full_moon");
+  sub_ref.classList.add("emph");
+  sub_ref.appendChild(document.createTextNode("full moon"));
+  full_moon_ref.appendChild(sub_ref);
+  string_thing = " will be ";
+  calc_val = (((moon_base + 30) - (stored_day % 20)) % 20);
+  if(calc_val > 1) string_thing += "in ";
+  full_moon_ref.appendChild(document.createTextNode(string_thing));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  if(calc_val <= 1)
+  {
+    if(calc_val == 0)
+    {
+      sub_ref.classList.add("full_moon");
+      string_thing = "tonight";
+    }
+    else string_thing = "tomorrow";
+  }
+  else
+  {
+    string_thing = "";
+    string_thing += calc_val;
+    string_thing += " days";
+  }
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  full_moon_ref.appendChild(sub_ref);
+  full_moon_ref.appendChild(document.createTextNode(", on the night of "));
+  string_thing = "day ";
+  string_thing += (stored_day + calc_val);
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  full_moon_ref.appendChild(sub_ref);
+  full_moon_ref.appendChild(document.createTextNode("."));
+  
+  new_moon_ref.appendChild(document.createTextNode("The next "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  sub_ref.classList.add("new_moon");
+  sub_ref.appendChild(document.createTextNode("new moon"));
+  new_moon_ref.appendChild(sub_ref);
+  string_thing = " will be ";
+  calc_val = (((moon_base + 20) - (stored_day % 20)) % 20);
+  if(calc_val > 1) string_thing += "in ";
+  new_moon_ref.appendChild(document.createTextNode(string_thing));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  if(calc_val <= 1)
+  {
+    if(calc_val == 0)
+    {
+      sub_ref.classList.add("new_moon");
+      string_thing = "tonight";
+    }
+    else string_thing = "tomorrow";
+  }
+  else
+  {
+    string_thing = "";
+    string_thing += calc_val;
+    string_thing += " days";
+  }
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  new_moon_ref.appendChild(sub_ref);
+  new_moon_ref.appendChild(document.createTextNode(", on the night of "));
+  string_thing = "day ";
+  string_thing += (stored_day + calc_val);
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  new_moon_ref.appendChild(sub_ref);
+  new_moon_ref.appendChild(document.createTextNode("."));
+  
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = "Year ";
+  string_thing += (current_year + 1);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  next_year_ref.appendChild(sub_ref);
+  string_thing = " will begin ";
+  calc_val = ((year_length + 1) - current_day_of_year);
+  if(calc_val != 1) string_thing += "in ";
+  next_year_ref.appendChild(document.createTextNode(string_thing));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  if(calc_val == 1)
+  {
+    string_thing = "tomorrow";
+  }
+  else
+  {
+    string_thing = "";
+    string_thing += calc_val;
+    string_thing += " days";
+  }
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  next_year_ref.appendChild(sub_ref);
+  next_year_ref.appendChild(document.createTextNode(", on "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = "day ";
+  string_thing += (stored_day + calc_val);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  next_year_ref.appendChild(sub_ref);
+  next_year_ref.appendChild(document.createTextNode("."));
+  
+  let redraw_needed = false;
+  
+  if(force_redraw)
+  {
+    redraw_needed = true;
+  }
+  else if((stored_year == null) || (stored_day_of_year == null))
+  {
+    redraw_needed = true;
+  }
+  else if(current_year != stored_year)
+  {
+    redraw_needed = true;
+  }
+
+  // time to draw the table
+  let things;
+  let title_ref;
+  let table_ref;
+  let loop;
+  let sub_er_ref;
+  
+  if(!redraw_needed)
+  {
+    // do the simpler case first
+    things = document.getElementsByClassName("selected");
+    if(things.length != 1)
+    {
+      alert("up_date 8");
+      return false;
+    }
+    things[0].classList.remove("selected");
+    
+    things = document.getElementsByClassName("calendar_cell");
+    if(things.length != year_length)
+    {
+      alert("up_date 9");
+      return false;
+    }
+    things[current_day_of_year - 1].classList.add("selected");
+  }
+  else
+  {
+    // redraw needed
+    title_ref = document.getElementById("year_title");
+    if(title_ref == null) {alert("up_date 10"); return false;}
+    table_ref = document.getElementById("calendar_tbody");
+    if(table_ref == null) {alert("up_date 11"); return false;}
+    
+    string_thing = "Year ";
+    string_thing += current_year;
+    while(title_ref.hasChildNodes())
+    {
+      title_ref.removeChild(title_ref.firstChild);
+    }
+    title_ref.appendChild(document.createTextNode(string_thing));
+    
+    while(table_ref.hasChildNodes())
+    {
+      table_ref.removeChild(table_ref.firstChild);
+    }
+    
+    for(loop = 0; loop < AUTUMNS[autumn_length]; ++loop)
+    {
+      if((loop % 5) == 0)
+      {
+        sub_ref = document.createElement("tr");
+      }
+      
+      sub_er_ref = document.createElement("td");
+      sub_er_ref.classList.add("autumn");
+      sub_er_ref.classList.add("calendar_cell");
+      sub_ref.appendChild(sub_er_ref);
+      
+      if(((loop % 5) == 4) || (loop == (AUTUMNS[autumn_length] - 1)))
+      {
+        table_ref.appendChild(sub_ref);
+      }
+    }
+    
+    for(loop = 0; loop < WINTERS[winter_length]; ++loop)
+    {
+      if((loop % 5) == 0)
+      {
+        sub_ref = document.createElement("tr");
+      }
+      
+      sub_er_ref = document.createElement("td");
+      sub_er_ref.classList.add("winter");
+      sub_er_ref.classList.add("calendar_cell");
+      sub_ref.appendChild(sub_er_ref);
+      
+      if(((loop % 5) == 4) || (loop == (WINTERS[winter_length] - 1)))
+      {
+        table_ref.appendChild(sub_ref);
+      }
+    }
+    
+    for(loop = 0; loop < SPRINGS[spring_length]; ++loop)
+    {
+      if((loop % 5) == 0)
+      {
+        sub_ref = document.createElement("tr");
+      }
+      
+      sub_er_ref = document.createElement("td");
+      sub_er_ref.classList.add("spring");
+      sub_er_ref.classList.add("calendar_cell");
+      sub_ref.appendChild(sub_er_ref);
+      
+      if(((loop % 5) == 4) || (loop == (SPRINGS[spring_length] - 1)))
+      {
+        table_ref.appendChild(sub_ref);
+      }
+    }
+    
+    for(loop = 0; loop < SUMMERS[summer_length]; ++loop)
+    {
+      if((loop % 5) == 0)
+      {
+        sub_ref = document.createElement("tr");
+      }
+      
+      sub_er_ref = document.createElement("td");
+      sub_er_ref.classList.add("summer");
+      sub_er_ref.classList.add("calendar_cell");
+      sub_ref.appendChild(sub_er_ref);
+      
+      if(((loop % 5) == 4) || (loop == (SUMMERS[summer_length] - 1)))
+      {
+        table_ref.appendChild(sub_ref);
+      }
+    }
+    
+    // assign numbers to those cells
+    // start by figuring out the first day of this year
+    calc_val = (year_length * (current_year - 1)) + 1;
+    things = document.getElementsByClassName("calendar_cell");
+    if(things.length != year_length)
+    {
+      alert("up_date 12");
+      return false;
+    }
+    for(loop = 0; loop < things.length; ++loop)
+    {
+      string_thing = "";
+      string_thing += (loop + calc_val);
+      things[loop].appendChild(document.createTextNode(string_thing));
+    }
+    things[current_day_of_year - 1].classList.add("selected");
+  }
+  
+  stored_year = current_year;
+  stored_day_of_year = current_day_of_year;
+  return true;
+}
+
+
+// season length information has changed -- this will process that (and will
+// call up_date(true) to redraw the calendar)
+// returns true if all went well or false on error
+function up_season()
+{
+  let autumn_ref = document.getElementById("autumn_length_select");
+  let winter_ref = document.getElementById("winter_length_select");
+  let spring_ref = document.getElementById("spring_length_select");
+  let summer_ref = document.getElementById("summer_length_select");
+  if((autumn_ref == null) || (winter_ref == null) ||
+    (spring_ref == null) || (summer_ref == null))
+  {
+    alert("up_season 1");
+    return false;
+  }
+  
+  if((autumn_length == null) || (winter_length == null) ||
+    (spring_length == null) || (summer_length == null))
+  {
+    // looks like the first time through
+    autumn_length = autumn_ref.selectedIndex;
+    winter_length = winter_ref.selectedIndex;
+    spring_length = spring_ref.selectedIndex;
+    summer_length = summer_ref.selectedIndex;
+    
+    if((autumn_length == 0) && (winter_length == 0) &&
+      (spring_length == 0) && (summer_length == 0))
+    {
+      alert("up_season 2");
+      return false;
+    }
+  }
+  else
+  {
+    // been here before
+    
+    // let's make sure they're not all 0 -- can't set all season lengths to 0
+    if((autumn_ref.selectedIndex == 0) && (winter_ref.selectedIndex == 0) &&
+      (spring_ref.selectedIndex == 0) && (summer_ref.selectedIndex == 0))
+    {
+      // that's not good -- restore them from stored values
+      // and make sure those values were good, first
+      if((autumn_length == 0) && (winter_length == 0) &&
+        (spring_length == 0) && (summer_length == 0))
+      {
+        alert("up_season 3");
+        return false;
+      }
+      
+      autumn_ref.selectedIndex = autumn_length;
+      winter_ref.selectedIndex = winter_length;
+      spring_ref.selectedIndex = spring_length;
+      summer_ref.selectedIndex = summer_length;
+    }
+    else
+    {
+      // not all 0? good -- store them
+      autumn_length = autumn_ref.selectedIndex;
+      winter_length = winter_ref.selectedIndex;
+      spring_length = spring_ref.selectedIndex;
+      summer_length = summer_ref.selectedIndex;
+    }
+  }
+  
+  return up_date(true);
+}
+
+
+// moon cycle information has changed -- change a couple bullet points to
+// show the new information (does not need to update the calendar)
+// returns true if all went well or false on error
+function up_moon()
+{
+  let input_ref = document.getElementById("moon_offset");
+  let select_ref = document.getElementById("moon_offset_select");
+  if((input_ref == null) || (select_ref == null))
+  {
+    alert("up_moon 1");
+    return false;
+  }
+  let moon_num = verify_num(input_ref.value, 1);
+  if(moon_num == null)
+  {
+    alert("up_moon 2");
+    return false;
+  }
+  
+  if(select_ref.selectedIndex == 0)
+  {
+    moon_base = (moon_num % 20);
+  }
+  else
+  {
+    moon_base = ((moon_num + 10) % 20);
+  }
+  
+  // okay I'll have up_date() write the bullet points so it all happens in
+  // one place
+  return up_date(false);
+}
+
+
+// returns a string representing the suffix that should be used when using a
+// number for purposes of ordering, eg. 1 -> "st"; 2 -> "nd"; 255 -> "th" etc.
+// numwhat: a Number -- the number for this function
+// returns a suffix string on success, empty string on error
+function suffix(numwhat)
+{
+  let thing = verify_num(numwhat, 1);
+  if(thing == null) return "";
+  thing = (thing % 100);
+  if((thing > 3) && (thing < 21)) return "th";  // let's cast a wider net
+  thing = (thing % 10);
+  if(thing == 1) return "st";
+  if(thing == 2) return "nd";
+  if(thing == 3) return "rd";
+  return "th";
+}
+
+
+// returns the name of the current (or next) season, or an empty string on error
+// day: Number -- the day number whose season we would like to know
+// next: boolean -- false == current season; true == next season
+// caps: boolean -- false == all letters lower case; true == first letter caps,
+//   others lower case
+function figure_season(day, next, caps)
+{
+  if(typeof(next) != typeof(false)) {alert("figure 1"); return "";}
+  if(typeof(caps) != typeof(false)) {alert("figure 2"); return "";}
+  if((verify_num(autumn_length, 0) == null) ||
+    (verify_num(winter_length, 0) == null) ||
+    (verify_num(spring_length, 0) == null) ||
+    (verify_num(summer_length, 0) == null))
+  {
+    alert("figure 3");
+    return "";
+  }
+  if((verify_num(day, 1) == null) ||
+    (autumn_length >= AUTUMNS.length) || (winter_length >= WINTERS.length) ||
+    (spring_length >= SPRINGS.length) || (summer_length >= SUMMERS.length))
+  {
+    alert("figure 4");
+    return "";
+  }
+  if((autumn_length == 0) && (winter_length == 0) &&
+    (spring_length == 0) && (summer_length == 0))
+  {
+    alert("figure 5");
+    return "";
+  }
+  let year_length = (AUTUMNS[autumn_length] + WINTERS[winter_length] +
+    SPRINGS[spring_length] + SUMMERS[summer_length]);
+  let calc;
+  // I think there's some if spaghetti coming
+  // well it wasn't as bad once I let it recurse
+  calc = (day % year_length);
+  if(calc == 0) calc = year_length;
+  
+  if(calc <= AUTUMNS[autumn_length])
+  {
+    if(next) return figure_season((AUTUMNS[autumn_length] + 1), false, caps);
+    if(caps) return "Autumn";
+    return "autumn";
+  }
+  
+  calc -= AUTUMNS[autumn_length];
+  if(calc <= WINTERS[winter_length])
+  {
+    if(next) return figure_season((AUTUMNS[autumn_length] +
+      WINTERS[winter_length] + 1), false, caps);
+    if(caps) return "Winter";
+    return "winter";
+  }
+  
+  calc -= WINTERS[winter_length];
+  if(calc <= SPRINGS[spring_length])
+  {
+    if(next) return figure_season((AUTUMNS[autumn_length] +
+      WINTERS[winter_length] + SPRINGS[spring_length] + 1), false, caps);
+    if(caps) return "Spring";
+    return "spring";
+  }
+  
+  calc -= SPRINGS[spring_length];
+  if(calc <= SUMMERS[summer_length])
+  {
+    if(next) return figure_season(1, false, caps);
+    if(caps) return "Summer";
+    return "summer";
+  }
+  
+  alert("figure 6");
+  return "";
+}
+
+
+function deerfraction_report()
+{
+  let slide_ref = document.getElementById("deerfraction");
+  if(slide_ref == null) {alert("fraction 1"); return;}
+  let span_ref = document.getElementById("deerfraction_output");
+  if(span_ref == null) {alert("fraction 2"); return;}
+  if(isNaN(slide_ref.value)) {alert("fraction 3"); return;}
+  let whoosh = Number(slide_ref.value);
+  if((whoosh < 0) || (whoosh > 1)) {alert("fraction 4"); return;}
+  
+  while(span_ref.hasChildNodes())
+  {
+    span_ref.removeChild(span_ref.firstChild);
+  }
+  span_ref.appendChild(document.createTextNode(whoosh.toFixed(2)));
+}
+
+function deer_kill_now()
+{
+  let input_ref = document.getElementById("deerday");
+  if(input_ref == null) {alert("dkn 1"); return;}
+  let slide_ref = document.getElementById("deerfraction");
+  if(slide_ref == null) {alert("dkn 2"); return;}
+  
+  let now = new Date();
+  let diff = ((now - date_base) / (1000 * 60 * 8));
+  diff -= 0.2;
+  let calc = (day_base + diff);
+  if(calc < 1) calc = 1;
+  input_ref.value = Math.floor(calc);
+  slide_ref.value = (calc % 1).toFixed(2);
+  
+  deerfraction_report();
+  deerclomputer();
+}
+
+function deerclomputer()
+{
+  const DEERGAP = 16.8;  // winter days between deerclopses
+  let needed = DEERGAP;
+  let all_but_winter = (AUTUMNS[autumn_length] + SPRINGS[spring_length] +
+    SUMMERS[summer_length]);
+  let year_length = (all_but_winter + WINTERS[winter_length]);
+  let string_thing;
+  let out_ref = document.getElementById("deerprophecy");
+  if(out_ref == null) {alert("dcl 1"); return;}
+  let day_ref = document.getElementById("deerday");
+  if(day_ref == null) {alert("dcl 2"); return;}
+  let deer_day = verify_num(day_ref.value, 1);
+  if(deer_day == null) return;
+  let part_ref = document.getElementById("deerfraction");
+  if(part_ref == null) {alert("dcl 3"); return;}
+  
+  if(winter_length == 0)
+  {
+    while(out_ref.hasChildNodes())
+    {
+      out_ref.removeChild(out_ref.firstChild);
+    }
+    string_thing = "We should not expect any more because there is no winter.";
+    out_ref.appendChild(document.createTextNode(string_thing));
+    return;
+  }
+  
+  // So work out why it seems to get stuck on a day and that might do it.
+  
+  deer_day += Number(part_ref.value);
+  
+  // all right, we'll do it the ugly way
+  while(needed > 0)
+  {
+    string_thing = figure_season(Math.floor(deer_day), false, false)
+    if(string_thing == "winter")
+    {
+      if(needed >= 1)
+      {
+        deer_day += 1;
+        needed -= 1;
+      }
+      else
+      {
+        deer_day += needed;
+        needed = 0;
+      }
+    }
+    else if(string_thing == "spring")
+    {
+      deer_day += SPRINGS[spring_length];
+    }
+    else if(string_thing == "summer")
+    {
+      deer_day += SUMMERS[summer_length];
+    }
+    else if(string_thing == "autumn")
+    {
+      deer_day += AUTUMNS[autumn_length];
+    }
+  }
+  
+  // check whether the last bit caused it to roll over to the next season
+  while(figure_season(Math.floor(deer_day), false, false) != "winter")
+  {
+    deer_day += 1;
+  }
+  
+  let sub_ref;
+  
+  string_thing = "We should expect the next Deerclops on ";
+  while(out_ref.hasChildNodes())
+  {
+    out_ref.removeChild(out_ref.firstChild);
+  }
+  out_ref.appendChild(document.createTextNode(string_thing));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = "day ";
+  string_thing += Math.floor(deer_day);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  out_ref.appendChild(sub_ref);
+  string_thing = ", and ";
+  out_ref.appendChild(document.createTextNode(string_thing));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  string_thing = (deer_day % 1).toFixed(2).substr(1);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  out_ref.appendChild(sub_ref);
+  string_thing = " of the way through it. That\'s the ";
+  out_ref.appendChild(document.createTextNode(string_thing));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  let that_year = (Math.ceil(deer_day / year_length));
+  let that_day = Math.floor(deer_day) - ((that_year - 1) * year_length);
+  that_day -= AUTUMNS[autumn_length];
+  string_thing = "";
+  string_thing += that_day;
+  string_thing += suffix(that_day);
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  out_ref.appendChild(sub_ref);
+  out_ref.appendChild(document.createTextNode(" day of "));
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  sub_ref.classList.add("winter");
+  sub_ref.appendChild(document.createTextNode("winter"));
+  out_ref.appendChild(sub_ref);
+  out_ref.appendChild(document.createTextNode(" in "));
+  string_thing = "year ";
+  string_thing += that_year;
+  sub_ref = document.createElement("span");
+  sub_ref.classList.add("emph");
+  sub_ref.appendChild(document.createTextNode(string_thing));
+  out_ref.appendChild(sub_ref);
+  out_ref.appendChild(document.createTextNode("."));
+}
+
+</script>
+
+</head>
+
+<body onload = "load_function()">
+<div><button style = "float:right" onclick = "settings()">Special Settings</button>
+It is day
+<input type = "number" value = "1" min = "1" step = "1" id = "day_input" onchange = "reset_date()">
+in your Don't Starve Together world.
+<progress id = "day_progress" value = "0" max = "480"></progress>
+</div>
+<div hidden id = "settings_container" class = "settings">
+Special settings!
+<br><br>
+Autumn is
+<select id = "autumn_length_select" onchange = "up_season()">
+  <option>not present.</option>
+  <option>very short (5 days).</option>
+  <option>short (12 days).</option>
+  <option selected>the default length (20 days).</option>
+  <option>long (30 days).</option>
+  <option>very long (50 days).</option>
+</select><br>
+Winter is
+<select id = "winter_length_select" onchange = "up_season()">
+  <option>not present.</option>
+  <option>very short (5 days).</option>
+  <option>short (10 days).</option>
+  <option selected>the default length (15 days).</option>
+  <option>long (22 days).</option>
+  <option>very long (40 days).</option>
+</select><br>
+Spring is
+<select id = "spring_length_select" onchange = "up_season()">
+  <option>not present.</option>
+  <option>very short (5 days).</option>
+  <option>short (12 days).</option>
+  <option selected>the default length (20 days).</option>
+  <option>long (30 days).</option>
+  <option>very long (50 days).</option>
+</select><br>
+Summer is
+<select id = "summer_length_select" onchange = "up_season()">
+  <option>not present.</option>
+  <option>very short (5 days).</option>
+  <option>short (10 days).</option>
+  <option selected>the default length (15 days).</option>
+  <option>long (22 days).</option>
+  <option>very long (40 days).</option>
+</select><br>
+If you change those lengths in your world after you generate it, you're on your own.
+<br><br>
+We did something to the lunar cycle and a
+<select id = "moon_offset_select" onchange = "up_moon()">
+  <option selected>new</option>
+  <option>full</option>
+</select>
+moon happened on day
+<input id = "moon_offset" onchange = "up_moon()" type = "number" value = "1" min = "1" step = "1">
+<br><br>
+Deerclomputer:<br>
+We killed a Deerclops on day
+(<button onclick = "deer_kill_now()">Right now! (Less 0.2 day for safety margin)</button>)
+<input id = "deerday" type = "number" min = "1" step = "1" value = "30" onchange = "deerclomputer()">
+and this portion into it:
+<input id = "deerfraction" type = "range" min = "0" max = "1" step = "0.01" value = "0.8" oninput = "deerfraction_report()" onchange = "deerclomputer()">
+<span id = "deerfraction_output">0.80</span><br>
+<span id = "deerprophecy">Set the values above to see when to expect another.</span>
+</div>
+<div class = "calendar_container">
+<br><br>
+<span id = "year_title" class = "emph">Whatup it's the calendar container</span>
+<table><tbody id = "calendar_tbody">
+</tbody></table>
+</div>
+<div>
+<br><br>
+<ul>
+  <li id = "li_day_of_year"></li>
+  <li id = "li_day_of_season"></li>
+  <li id = "li_next_season"></li>
+  <li id = "li_full_moon"></li>
+  <li id = "li_new_moon"></li>
+  <li id = "li_next_year"></li>
+</ul>
+</div>
+</body>
+
+</html>
